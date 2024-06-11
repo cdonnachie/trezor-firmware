@@ -1337,6 +1337,7 @@ pub enum TranslatedString {
     homescreen__set_default = 936,  // "Do you really want to set default homescreen image?"
     reset__words_may_repeat = 937,  // "Words may repeat."
     reset__repeat_for_all_shares = 938,  // "Repeat for all shares."
+    reset__the_word_is_repeated = 939,  // "The word is repeated"
 }
 
 impl TranslatedString {
@@ -2668,6 +2669,7 @@ impl TranslatedString {
             Self::homescreen__set_default => "Do you really want to set default homescreen image?",
             Self::reset__words_may_repeat => "Words may repeat.",
             Self::reset__repeat_for_all_shares => "Repeat for all shares.",
+            Self::reset__the_word_is_repeated => "The word is repeated",
         }
     }
 
@@ -4000,6 +4002,7 @@ impl TranslatedString {
             Qstr::MP_QSTR_homescreen__set_default => Some(Self::homescreen__set_default),
             Qstr::MP_QSTR_reset__words_may_repeat => Some(Self::reset__words_may_repeat),
             Qstr::MP_QSTR_reset__repeat_for_all_shares => Some(Self::reset__repeat_for_all_shares),
+            Qstr::MP_QSTR_reset__the_word_is_repeated => Some(Self::reset__the_word_is_repeated),
             _ => None,
         }
     }
