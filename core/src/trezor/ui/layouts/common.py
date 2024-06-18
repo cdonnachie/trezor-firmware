@@ -1,9 +1,12 @@
 from typing import TYPE_CHECKING
 
+import trezorui2
 from trezor import log, workflow
 from trezor.enums import ButtonRequestType
 from trezor.messages import ButtonAck, ButtonRequest
 from trezor.wire import context
+
+LAST_TRANSITION_OUT: trezorui2.AttachType | None = None
 
 if TYPE_CHECKING:
     from typing import Awaitable, Protocol, TypeVar
@@ -40,3 +43,13 @@ async def interact(
         pages = layout.page_count()  # type: ignore [Cannot access attribute "page_count" for class "LayoutType"]
     await button_request(br_type, br_code, pages)
     return await layout
+
+
+def get_last_transition_out() -> trezorui2.AttachType | None:
+    global LAST_TRANSITION_OUT
+    return LAST_TRANSITION_OUT
+
+
+def set_last_transition_out(transition: trezorui2.AttachType | None) -> None:
+    global LAST_TRANSITION_OUT
+    LAST_TRANSITION_OUT = transition

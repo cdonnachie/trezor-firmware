@@ -6,7 +6,12 @@ from trezor.enums import ButtonRequestType
 from trezor.messages import ButtonAck, ButtonRequest
 from trezor.wire import ActionCancelled, context
 
-from ..common import button_request, interact
+from ..common import (
+    button_request,
+    get_last_transition_out,
+    interact,
+    set_last_transition_out,
+)
 
 if TYPE_CHECKING:
     from typing import Any, Awaitable, Iterable, NoReturn, Sequence, TypeVar
@@ -41,7 +46,7 @@ class RustLayout(LayoutParentType[T]):
         self.br_chan = loop.chan()
         self.layout = layout
         self.timer = loop.Timer()
-        self.layout.attach_timer_fn(self.set_timer)
+        self.layout.attach_timer_fn(self.set_timer, get_last_transition_out())
         self._send_button_request()
 
     def __del__(self):
@@ -303,13 +308,16 @@ class RustLayout(LayoutParentType[T]):
             br_code, br_type = res
             self.br_chan.publish((br_code, br_type, self.layout.page_count()))
 
+    def finalize(self):
+        set_last_transition_out(self.layout.get_transition_out())
+
 
 def draw_simple(layout: trezorui2.LayoutObj[Any]) -> None:
     # Simple drawing not supported for layouts that set timers.
     def dummy_set_timer(token: int, deadline: int) -> None:
         raise RuntimeError
 
-    layout.attach_timer_fn(dummy_set_timer)
+    layout.attach_timer_fn(dummy_set_timer, None)
     layout.paint()
     ui.refresh()
 

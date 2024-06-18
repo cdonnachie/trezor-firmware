@@ -49,7 +49,8 @@ impl<T: Swipable + Component> Component for SwipeUpScreen<T> {
             .swipe
             .event(ctx, event, self.content.get_swipe_config())
         {
-            Some(SwipeDetectMsg::Trigger(_)) => {
+            Some(SwipeDetectMsg::Trigger(dir)) => {
+                ctx.set_transition_out(AttachType::Swipe(dir));
                 return Some(SwipeUpScreenMsg::Swiped);
             }
             Some(SwipeDetectMsg::Move(dir, progress)) => {

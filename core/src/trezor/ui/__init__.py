@@ -131,6 +131,12 @@ class Layout(Generic[T]):
     raised, usually from some of the child components.
     """
 
+    def finalize(self) -> None:
+        """
+        Called when the layout is done. Usually overridden to allow cleanup or storing context.
+        """
+        pass
+
     async def __iter__(self) -> T:
         """
         Run the layout and wait until it completes.  Returns the result value.
@@ -159,6 +165,8 @@ class Layout(Generic[T]):
         except Result as result:
             # Result exception was raised, this means this layout is complete.
             value = result.value
+        finally:
+            self.finalize()
         return value
 
     if TYPE_CHECKING:
