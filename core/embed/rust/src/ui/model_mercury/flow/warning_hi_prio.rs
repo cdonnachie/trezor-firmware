@@ -29,13 +29,13 @@ impl FlowState for WarningHiPrio {
         let attach = AttachType::Swipe(direction);
         match (self, direction) {
             (WarningHiPrio::Message, SwipeDirection::Left) => {
-                Decision::Goto(WarningHiPrio::Menu, direction, attach)
+                Decision::Goto(WarningHiPrio::Menu, Some(direction), attach)
             }
             (WarningHiPrio::Message, SwipeDirection::Up) => {
-                Decision::Goto(WarningHiPrio::Cancelled, direction, attach)
+                Decision::Goto(WarningHiPrio::Cancelled, Some(direction), attach)
             }
             (WarningHiPrio::Menu, SwipeDirection::Right) => {
-                Decision::Goto(WarningHiPrio::Message, direction, attach)
+                Decision::Goto(WarningHiPrio::Message, Some(direction), attach)
             }
             _ => Decision::Nothing,
         }
@@ -43,20 +43,18 @@ impl FlowState for WarningHiPrio {
 
     fn handle_event(&self, msg: FlowMsg) -> Decision<Self> {
         match (self, msg) {
-            (WarningHiPrio::Message, FlowMsg::Info) => Decision::Goto(
-                WarningHiPrio::Menu,
-                SwipeDirection::Left,
-                AttachType::Initial,
-            ),
+            (WarningHiPrio::Message, FlowMsg::Info) => {
+                Decision::Goto(WarningHiPrio::Menu, None, AttachType::Initial)
+            }
             (WarningHiPrio::Menu, FlowMsg::Choice(1)) => Decision::Return(FlowMsg::Confirmed),
             (WarningHiPrio::Menu, FlowMsg::Choice(_)) => Decision::Goto(
                 WarningHiPrio::Cancelled,
-                SwipeDirection::Up,
+                Some(SwipeDirection::Up),
                 AttachType::Swipe(SwipeDirection::Up),
             ),
             (WarningHiPrio::Menu, FlowMsg::Cancelled) => Decision::Goto(
                 WarningHiPrio::Message,
-                SwipeDirection::Right,
+                Some(SwipeDirection::Right),
                 AttachType::Swipe(SwipeDirection::Right),
             ),
             (WarningHiPrio::Cancelled, _) => Decision::Return(FlowMsg::Cancelled),

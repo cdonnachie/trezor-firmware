@@ -33,13 +33,13 @@ impl FlowState for RequestNumber {
         let attach = AttachType::Swipe(direction);
         match (self, direction) {
             (RequestNumber::Number, SwipeDirection::Left) => {
-                Decision::Goto(RequestNumber::Menu, direction, attach)
+                Decision::Goto(RequestNumber::Menu, Some(direction), attach)
             }
             (RequestNumber::Menu, SwipeDirection::Right) => {
-                Decision::Goto(RequestNumber::Number, direction, attach)
+                Decision::Goto(RequestNumber::Number, Some(direction), attach)
             }
             (RequestNumber::Info, SwipeDirection::Right) => {
-                Decision::Goto(RequestNumber::Menu, direction, attach)
+                Decision::Goto(RequestNumber::Menu, Some(direction), attach)
             }
             _ => Decision::Nothing,
         }
@@ -47,24 +47,22 @@ impl FlowState for RequestNumber {
 
     fn handle_event(&self, msg: FlowMsg) -> Decision<Self> {
         match (self, msg) {
-            (RequestNumber::Number, FlowMsg::Info) => Decision::Goto(
-                RequestNumber::Menu,
-                SwipeDirection::Left,
-                AttachType::Initial,
-            ),
+            (RequestNumber::Number, FlowMsg::Info) => {
+                Decision::Goto(RequestNumber::Menu, None, AttachType::Initial)
+            }
             (RequestNumber::Menu, FlowMsg::Choice(0)) => Decision::Goto(
                 RequestNumber::Info,
-                SwipeDirection::Left,
+                Some(SwipeDirection::Left),
                 AttachType::Swipe(SwipeDirection::Left),
             ),
             (RequestNumber::Menu, FlowMsg::Cancelled) => Decision::Goto(
                 RequestNumber::Number,
-                SwipeDirection::Right,
+                Some(SwipeDirection::Right),
                 AttachType::Swipe(SwipeDirection::Right),
             ),
             (RequestNumber::Info, FlowMsg::Cancelled) => Decision::Goto(
                 RequestNumber::Menu,
-                SwipeDirection::Right,
+                Some(SwipeDirection::Right),
                 AttachType::Initial,
             ),
             (RequestNumber::Number, FlowMsg::Choice(n)) => Decision::Return(FlowMsg::Choice(n)),

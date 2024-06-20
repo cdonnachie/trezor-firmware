@@ -52,7 +52,7 @@ impl<Q: FlowState, S: FlowStore> SwipeFlow<Q, S> {
     fn goto(
         &mut self,
         ctx: &mut EventCtx,
-        direction: SwipeDirection,
+        direction: Option<SwipeDirection>,
         attach_type: AttachType,
         state: Q,
     ) {
@@ -66,10 +66,10 @@ impl<Q: FlowState, S: FlowStore> SwipeFlow<Q, S> {
         self.internal_pages = self.store.get_internal_page_count(state.index()) as u16;
 
         match direction {
-            SwipeDirection::Up => {
+            Some(SwipeDirection::Up) => {
                 self.internal_state = 0;
             }
-            SwipeDirection::Down => {
+            Some(SwipeDirection::Down) => {
                 self.internal_state = self.internal_pages.saturating_sub(1);
             }
             _ => {}
@@ -214,13 +214,15 @@ impl<Q: FlowState, S: FlowStore> Component for SwipeFlow<Q, S> {
                     let config = self.store.get_swipe_config(self.state.index());
 
                     if let Decision::Goto(_, direction, _) = decision {
-                        if config.is_allowed(direction) {
-                            if !animation_disabled() {
-                                self.swipe.trigger(ctx, direction, config);
-                                self.decision_override = Some(decision);
-                                decision = Decision::Nothing;
+                        if let Some(direction) = direction {
+                            if config.is_allowed(direction) {
+                                if !animation_disabled() {
+                                    self.swipe.trigger(ctx, direction, config);
+                                    self.decision_override = Some(decision);
+                                    decision = Decision::Nothing;
+                                }
+                                self.allow_swipe = true;
                             }
-                            self.allow_swipe = true;
                         }
                     }
                 }

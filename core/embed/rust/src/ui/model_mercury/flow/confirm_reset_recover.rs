@@ -27,10 +27,10 @@ impl FlowState for ConfirmResetRecover {
         let attach = AttachType::Swipe(direction);
         match (self, direction) {
             (ConfirmResetRecover::Intro, SwipeDirection::Left) => {
-                Decision::Goto(ConfirmResetRecover::Menu, direction, attach)
+                Decision::Goto(ConfirmResetRecover::Menu, Some(direction), attach)
             }
             (ConfirmResetRecover::Menu, SwipeDirection::Right) => {
-                Decision::Goto(ConfirmResetRecover::Intro, direction, attach)
+                Decision::Goto(ConfirmResetRecover::Intro, Some(direction), attach)
             }
             (ConfirmResetRecover::Intro, SwipeDirection::Up) => {
                 Decision::Return(FlowMsg::Confirmed)
@@ -41,14 +41,12 @@ impl FlowState for ConfirmResetRecover {
 
     fn handle_event(&self, msg: FlowMsg) -> Decision<Self> {
         match (self, msg) {
-            (ConfirmResetRecover::Intro, FlowMsg::Info) => Decision::Goto(
-                ConfirmResetRecover::Menu,
-                SwipeDirection::Left,
-                AttachType::Initial,
-            ),
+            (ConfirmResetRecover::Intro, FlowMsg::Info) => {
+                Decision::Goto(ConfirmResetRecover::Menu, None, AttachType::Initial)
+            }
             (ConfirmResetRecover::Menu, FlowMsg::Cancelled) => Decision::Goto(
                 ConfirmResetRecover::Intro,
-                SwipeDirection::Right,
+                Some(SwipeDirection::Right),
                 AttachType::Swipe(SwipeDirection::Right),
             ),
             (ConfirmResetRecover::Menu, FlowMsg::Choice(0)) => Decision::Return(FlowMsg::Cancelled),

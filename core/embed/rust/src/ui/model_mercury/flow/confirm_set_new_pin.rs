@@ -32,24 +32,24 @@ impl FlowState for SetNewPin {
         let attach = AttachType::Swipe(direction);
         match (self, direction) {
             (SetNewPin::Intro, SwipeDirection::Left) => {
-                Decision::Goto(SetNewPin::Menu, direction, attach)
+                Decision::Goto(SetNewPin::Menu, Some(direction), attach)
             }
             (SetNewPin::Intro, SwipeDirection::Up) => Decision::Return(FlowMsg::Confirmed),
 
             (SetNewPin::Menu, SwipeDirection::Right) => {
-                Decision::Goto(SetNewPin::Intro, direction, attach)
+                Decision::Goto(SetNewPin::Intro, Some(direction), attach)
             }
             (SetNewPin::CancelPinIntro, SwipeDirection::Up) => {
-                Decision::Goto(SetNewPin::CancelPinConfirm, direction, attach)
+                Decision::Goto(SetNewPin::CancelPinConfirm, Some(direction), attach)
             }
             (SetNewPin::CancelPinIntro, SwipeDirection::Right) => {
-                Decision::Goto(SetNewPin::Intro, direction, attach)
+                Decision::Goto(SetNewPin::Intro, Some(direction), attach)
             }
             (SetNewPin::CancelPinConfirm, SwipeDirection::Down) => {
-                Decision::Goto(SetNewPin::CancelPinIntro, direction, attach)
+                Decision::Goto(SetNewPin::CancelPinIntro, Some(direction), attach)
             }
             (SetNewPin::CancelPinConfirm, SwipeDirection::Right) => {
-                Decision::Goto(SetNewPin::Intro, direction, attach)
+                Decision::Goto(SetNewPin::Intro, Some(direction), attach)
             }
             _ => Decision::Nothing,
         }
@@ -58,26 +58,26 @@ impl FlowState for SetNewPin {
     fn handle_event(&self, msg: FlowMsg) -> Decision<Self> {
         match (self, msg) {
             (SetNewPin::Intro, FlowMsg::Info) => {
-                Decision::Goto(SetNewPin::Menu, SwipeDirection::Left, AttachType::Initial)
+                Decision::Goto(SetNewPin::Menu, None, AttachType::Initial)
             }
             (SetNewPin::Menu, FlowMsg::Choice(0)) => Decision::Goto(
                 SetNewPin::CancelPinIntro,
-                SwipeDirection::Left,
+                Some(SwipeDirection::Left),
                 AttachType::Swipe(SwipeDirection::Left),
             ),
             (SetNewPin::Menu, FlowMsg::Cancelled) => Decision::Goto(
                 SetNewPin::Intro,
-                SwipeDirection::Right,
+                Some(SwipeDirection::Right),
                 AttachType::Swipe(SwipeDirection::Right),
             ),
             (SetNewPin::CancelPinIntro, FlowMsg::Cancelled) => Decision::Goto(
                 SetNewPin::Intro,
-                SwipeDirection::Right,
+                Some(SwipeDirection::Right),
                 AttachType::Swipe(SwipeDirection::Right),
             ),
             (SetNewPin::CancelPinConfirm, FlowMsg::Cancelled) => Decision::Goto(
                 SetNewPin::CancelPinIntro,
-                SwipeDirection::Right,
+                Some(SwipeDirection::Right),
                 AttachType::Swipe(SwipeDirection::Right),
             ),
             (SetNewPin::CancelPinConfirm, FlowMsg::Confirmed) => {

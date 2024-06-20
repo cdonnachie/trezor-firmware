@@ -34,23 +34,23 @@ impl FlowState for ConfirmOutput {
         let attach = AttachType::Swipe(direction);
         match (self, direction) {
             (ConfirmOutput::Address | ConfirmOutput::Amount, SwipeDirection::Left) => {
-                Decision::Goto(ConfirmOutput::Menu, direction, attach)
+                Decision::Goto(ConfirmOutput::Menu, Some(direction), attach)
             }
             (ConfirmOutput::Address, SwipeDirection::Up) => {
-                Decision::Goto(ConfirmOutput::Amount, direction, attach)
+                Decision::Goto(ConfirmOutput::Amount, Some(direction), attach)
             }
             (ConfirmOutput::Amount, SwipeDirection::Up) => Decision::Return(FlowMsg::Confirmed),
             (ConfirmOutput::Amount, SwipeDirection::Down) => {
-                Decision::Goto(ConfirmOutput::Address, direction, attach)
+                Decision::Goto(ConfirmOutput::Address, Some(direction), attach)
             }
             (ConfirmOutput::Menu, SwipeDirection::Right) => {
-                Decision::Goto(ConfirmOutput::Address, direction, attach)
+                Decision::Goto(ConfirmOutput::Address, Some(direction), attach)
             }
             (ConfirmOutput::Menu, SwipeDirection::Left) => {
-                Decision::Goto(ConfirmOutput::AccountInfo, direction, attach)
+                Decision::Goto(ConfirmOutput::AccountInfo, Some(direction), attach)
             }
             (ConfirmOutput::AccountInfo | ConfirmOutput::CancelTap, SwipeDirection::Right) => {
-                Decision::Goto(ConfirmOutput::Menu, direction, attach)
+                Decision::Goto(ConfirmOutput::Menu, Some(direction), attach)
             }
             _ => Decision::Nothing,
         }
@@ -58,30 +58,26 @@ impl FlowState for ConfirmOutput {
 
     fn handle_event(&self, msg: FlowMsg) -> Decision<Self> {
         match (self, msg) {
-            (_, FlowMsg::Info) => Decision::Goto(
-                ConfirmOutput::Menu,
-                SwipeDirection::Left,
-                AttachType::Initial,
-            ),
+            (_, FlowMsg::Info) => Decision::Goto(ConfirmOutput::Menu, None, AttachType::Initial),
             (ConfirmOutput::Menu, FlowMsg::Choice(0)) => Decision::Goto(
                 ConfirmOutput::AccountInfo,
-                SwipeDirection::Left,
+                Some(SwipeDirection::Left),
                 AttachType::Swipe(SwipeDirection::Left),
             ),
             (ConfirmOutput::Menu, FlowMsg::Choice(1)) => Decision::Goto(
                 ConfirmOutput::CancelTap,
-                SwipeDirection::Left,
+                Some(SwipeDirection::Left),
                 AttachType::Swipe(SwipeDirection::Left),
             ),
             (ConfirmOutput::Menu, FlowMsg::Cancelled) => Decision::Goto(
                 ConfirmOutput::Address,
-                SwipeDirection::Right,
+                Some(SwipeDirection::Right),
                 AttachType::Swipe(SwipeDirection::Right),
             ),
             (ConfirmOutput::CancelTap, FlowMsg::Confirmed) => Decision::Return(FlowMsg::Cancelled),
             (_, FlowMsg::Cancelled) => Decision::Goto(
                 ConfirmOutput::Menu,
-                SwipeDirection::Right,
+                Some(SwipeDirection::Right),
                 AttachType::Initial,
             ),
             _ => Decision::Nothing,

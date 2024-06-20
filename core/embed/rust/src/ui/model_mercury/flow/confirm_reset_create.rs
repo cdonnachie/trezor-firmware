@@ -34,19 +34,19 @@ impl FlowState for ConfirmResetCreate {
         let attach = AttachType::Swipe(direction);
         match (self, direction) {
             (ConfirmResetCreate::Intro, SwipeDirection::Left) => {
-                Decision::Goto(ConfirmResetCreate::Menu, direction, attach)
+                Decision::Goto(ConfirmResetCreate::Menu, Some(direction), attach)
             }
             (ConfirmResetCreate::Intro, SwipeDirection::Up) => {
-                Decision::Goto(ConfirmResetCreate::Confirm, direction, attach)
+                Decision::Goto(ConfirmResetCreate::Confirm, Some(direction), attach)
             }
             (ConfirmResetCreate::Menu, SwipeDirection::Right) => {
-                Decision::Goto(ConfirmResetCreate::Intro, direction, attach)
+                Decision::Goto(ConfirmResetCreate::Intro, Some(direction), attach)
             }
             (ConfirmResetCreate::Confirm, SwipeDirection::Down) => {
-                Decision::Goto(ConfirmResetCreate::Intro, direction, attach)
+                Decision::Goto(ConfirmResetCreate::Intro, Some(direction), attach)
             }
             (ConfirmResetCreate::Confirm, SwipeDirection::Left) => {
-                Decision::Goto(ConfirmResetCreate::Menu, direction, attach)
+                Decision::Goto(ConfirmResetCreate::Menu, Some(direction), attach)
             }
             _ => Decision::Nothing,
         }
@@ -54,25 +54,21 @@ impl FlowState for ConfirmResetCreate {
 
     fn handle_event(&self, msg: FlowMsg) -> Decision<Self> {
         match (self, msg) {
-            (ConfirmResetCreate::Intro, FlowMsg::Info) => Decision::Goto(
-                ConfirmResetCreate::Menu,
-                SwipeDirection::Left,
-                AttachType::Initial,
-            ),
+            (ConfirmResetCreate::Intro, FlowMsg::Info) => {
+                Decision::Goto(ConfirmResetCreate::Menu, None, AttachType::Initial)
+            }
             (ConfirmResetCreate::Menu, FlowMsg::Cancelled) => Decision::Goto(
                 ConfirmResetCreate::Intro,
-                SwipeDirection::Right,
+                Some(SwipeDirection::Right),
                 AttachType::Swipe(SwipeDirection::Right),
             ),
             (ConfirmResetCreate::Menu, FlowMsg::Choice(0)) => Decision::Return(FlowMsg::Cancelled),
             (ConfirmResetCreate::Confirm, FlowMsg::Confirmed) => {
                 Decision::Return(FlowMsg::Confirmed)
             }
-            (ConfirmResetCreate::Confirm, FlowMsg::Info) => Decision::Goto(
-                ConfirmResetCreate::Menu,
-                SwipeDirection::Left,
-                AttachType::Initial,
-            ),
+            (ConfirmResetCreate::Confirm, FlowMsg::Info) => {
+                Decision::Goto(ConfirmResetCreate::Menu, None, AttachType::Initial)
+            }
             _ => Decision::Nothing,
         }
     }

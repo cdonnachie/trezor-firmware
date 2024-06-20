@@ -35,51 +35,51 @@ pub enum ConfirmActionSimple {
 impl FlowState for ConfirmAction {
     fn handle_swipe(&self, direction: SwipeDirection) -> Decision<Self> {
         match (self, direction) {
-            (ConfirmAction::Intro, SwipeDirection::Left) => {
-                Decision::Goto(ConfirmAction::Menu, direction, AttachType::Swipe(direction))
-            }
+            (ConfirmAction::Intro, SwipeDirection::Left) => Decision::Goto(
+                ConfirmAction::Menu,
+                Some(direction),
+                AttachType::Swipe(direction),
+            ),
             (ConfirmAction::Menu, SwipeDirection::Right) => Decision::Goto(
                 ConfirmAction::Intro,
-                direction,
+                Some(direction),
                 AttachType::Swipe(direction),
             ),
             (ConfirmAction::Intro, SwipeDirection::Up) => Decision::Goto(
                 ConfirmAction::Confirm,
-                direction,
+                Some(direction),
                 AttachType::Swipe(direction),
             ),
             (ConfirmAction::Confirm, SwipeDirection::Down) => Decision::Goto(
                 ConfirmAction::Intro,
-                direction,
+                Some(direction),
                 AttachType::Swipe(direction),
             ),
-            (ConfirmAction::Confirm, SwipeDirection::Left) => {
-                Decision::Goto(ConfirmAction::Menu, direction, AttachType::Swipe(direction))
-            }
+            (ConfirmAction::Confirm, SwipeDirection::Left) => Decision::Goto(
+                ConfirmAction::Menu,
+                Some(direction),
+                AttachType::Swipe(direction),
+            ),
             _ => Decision::Nothing,
         }
     }
 
     fn handle_event(&self, msg: FlowMsg) -> Decision<Self> {
         match (self, msg) {
-            (ConfirmAction::Intro, FlowMsg::Info) => Decision::Goto(
-                ConfirmAction::Menu,
-                SwipeDirection::Left,
-                AttachType::Initial,
-            ),
+            (ConfirmAction::Intro, FlowMsg::Info) => {
+                Decision::Goto(ConfirmAction::Menu, None, AttachType::Initial)
+            }
             (ConfirmAction::Menu, FlowMsg::Cancelled) => Decision::Goto(
                 ConfirmAction::Intro,
-                SwipeDirection::Right,
+                Some(SwipeDirection::Right),
                 AttachType::Swipe(SwipeDirection::Right),
             ),
             (ConfirmAction::Menu, FlowMsg::Choice(0)) => Decision::Return(FlowMsg::Cancelled),
             (ConfirmAction::Menu, FlowMsg::Choice(1)) => Decision::Return(FlowMsg::Info),
             (ConfirmAction::Confirm, FlowMsg::Confirmed) => Decision::Return(FlowMsg::Confirmed),
-            (ConfirmAction::Confirm, FlowMsg::Info) => Decision::Goto(
-                ConfirmAction::Menu,
-                SwipeDirection::Left,
-                AttachType::Initial,
-            ),
+            (ConfirmAction::Confirm, FlowMsg::Info) => {
+                Decision::Goto(ConfirmAction::Menu, None, AttachType::Initial)
+            }
             _ => Decision::Nothing,
         }
     }
@@ -90,12 +90,12 @@ impl FlowState for ConfirmActionSimple {
         match (self, direction) {
             (ConfirmActionSimple::Intro, SwipeDirection::Left) => Decision::Goto(
                 ConfirmActionSimple::Menu,
-                direction,
+                Some(direction),
                 AttachType::Swipe(direction),
             ),
             (ConfirmActionSimple::Menu, SwipeDirection::Right) => Decision::Goto(
                 ConfirmActionSimple::Intro,
-                direction,
+                Some(direction),
                 AttachType::Swipe(direction),
             ),
             (ConfirmActionSimple::Intro, SwipeDirection::Up) => {
@@ -107,14 +107,12 @@ impl FlowState for ConfirmActionSimple {
 
     fn handle_event(&self, msg: FlowMsg) -> Decision<Self> {
         match (self, msg) {
-            (ConfirmActionSimple::Intro, FlowMsg::Info) => Decision::Goto(
-                ConfirmActionSimple::Menu,
-                SwipeDirection::Left,
-                AttachType::Initial,
-            ),
+            (ConfirmActionSimple::Intro, FlowMsg::Info) => {
+                Decision::Goto(ConfirmActionSimple::Menu, None, AttachType::Initial)
+            }
             (ConfirmActionSimple::Menu, FlowMsg::Cancelled) => Decision::Goto(
                 ConfirmActionSimple::Intro,
-                SwipeDirection::Right,
+                Some(SwipeDirection::Right),
                 AttachType::Swipe(SwipeDirection::Right),
             ),
             (ConfirmActionSimple::Menu, FlowMsg::Choice(0)) => Decision::Return(FlowMsg::Cancelled),

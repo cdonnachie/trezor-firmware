@@ -31,25 +31,25 @@ impl FlowState for PromptBackup {
         let attach = AttachType::Swipe(direction);
         match (self, direction) {
             (PromptBackup::Intro, SwipeDirection::Left) => {
-                Decision::Goto(PromptBackup::Menu, direction, attach)
+                Decision::Goto(PromptBackup::Menu, Some(direction), attach)
             }
             (PromptBackup::Intro, SwipeDirection::Up) => Decision::Return(FlowMsg::Confirmed),
 
             (PromptBackup::Menu, SwipeDirection::Right) => {
-                Decision::Goto(PromptBackup::Intro, direction, attach)
+                Decision::Goto(PromptBackup::Intro, Some(direction), attach)
             }
 
             (PromptBackup::SkipBackupIntro, SwipeDirection::Up) => {
-                Decision::Goto(PromptBackup::SkipBackupConfirm, direction, attach)
+                Decision::Goto(PromptBackup::SkipBackupConfirm, Some(direction), attach)
             }
             (PromptBackup::SkipBackupIntro, SwipeDirection::Right) => {
-                Decision::Goto(PromptBackup::Intro, direction, attach)
+                Decision::Goto(PromptBackup::Intro, Some(direction), attach)
             }
             (PromptBackup::SkipBackupConfirm, SwipeDirection::Down) => {
-                Decision::Goto(PromptBackup::SkipBackupIntro, direction, attach)
+                Decision::Goto(PromptBackup::SkipBackupIntro, Some(direction), attach)
             }
             (PromptBackup::SkipBackupConfirm, SwipeDirection::Right) => {
-                Decision::Goto(PromptBackup::Intro, direction, attach)
+                Decision::Goto(PromptBackup::Intro, Some(direction), attach)
             }
             _ => Decision::Nothing,
         }
@@ -57,29 +57,27 @@ impl FlowState for PromptBackup {
 
     fn handle_event(&self, msg: FlowMsg) -> Decision<Self> {
         match (self, msg) {
-            (PromptBackup::Intro, FlowMsg::Info) => Decision::Goto(
-                PromptBackup::Menu,
-                SwipeDirection::Left,
-                AttachType::Initial,
-            ),
+            (PromptBackup::Intro, FlowMsg::Info) => {
+                Decision::Goto(PromptBackup::Menu, None, AttachType::Initial)
+            }
             (PromptBackup::Menu, FlowMsg::Choice(0)) => Decision::Goto(
                 PromptBackup::SkipBackupIntro,
-                SwipeDirection::Left,
+                Some(SwipeDirection::Left),
                 AttachType::Swipe(SwipeDirection::Left),
             ),
             (PromptBackup::Menu, FlowMsg::Cancelled) => Decision::Goto(
                 PromptBackup::Intro,
-                SwipeDirection::Right,
+                Some(SwipeDirection::Right),
                 AttachType::Swipe(SwipeDirection::Right),
             ),
             (PromptBackup::SkipBackupIntro, FlowMsg::Cancelled) => Decision::Goto(
                 PromptBackup::Menu,
-                SwipeDirection::Right,
+                Some(SwipeDirection::Right),
                 AttachType::Initial,
             ),
             (PromptBackup::SkipBackupConfirm, FlowMsg::Cancelled) => Decision::Goto(
                 PromptBackup::SkipBackupIntro,
-                SwipeDirection::Right,
+                Some(SwipeDirection::Right),
                 AttachType::Swipe(SwipeDirection::Right),
             ),
             (PromptBackup::SkipBackupConfirm, FlowMsg::Confirmed) => {

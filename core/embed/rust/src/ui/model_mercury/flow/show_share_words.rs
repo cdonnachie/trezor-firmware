@@ -37,16 +37,16 @@ impl FlowState for ShowShareWords {
         let attach = AttachType::Swipe(direction);
         match (self, direction) {
             (ShowShareWords::Instruction, SwipeDirection::Up) => {
-                Decision::Goto(ShowShareWords::Words, direction, attach)
+                Decision::Goto(ShowShareWords::Words, Some(direction), attach)
             }
             (ShowShareWords::Confirm, SwipeDirection::Down) => {
-                Decision::Goto(ShowShareWords::Words, direction, attach)
+                Decision::Goto(ShowShareWords::Words, Some(direction), attach)
             }
             (ShowShareWords::Words, SwipeDirection::Up) => {
-                Decision::Goto(ShowShareWords::Confirm, direction, attach)
+                Decision::Goto(ShowShareWords::Confirm, Some(direction), attach)
             }
             (ShowShareWords::Words, SwipeDirection::Down) => {
-                Decision::Goto(ShowShareWords::Instruction, direction, attach)
+                Decision::Goto(ShowShareWords::Instruction, Some(direction), attach)
             }
             (ShowShareWords::CheckBackupIntro, SwipeDirection::Up) => {
                 Decision::Return(FlowMsg::Confirmed)
@@ -59,17 +59,17 @@ impl FlowState for ShowShareWords {
         match (self, msg) {
             (ShowShareWords::Words, FlowMsg::Cancelled) => Decision::Goto(
                 ShowShareWords::Instruction,
-                SwipeDirection::Down,
+                Some(SwipeDirection::Down),
                 AttachType::Swipe(SwipeDirection::Down),
             ),
             (ShowShareWords::Words, FlowMsg::Confirmed) => Decision::Goto(
                 ShowShareWords::Confirm,
-                SwipeDirection::Up,
+                Some(SwipeDirection::Up),
                 AttachType::Swipe(SwipeDirection::Up),
             ),
             (ShowShareWords::Confirm, FlowMsg::Confirmed) => Decision::Goto(
                 ShowShareWords::CheckBackupIntro,
-                SwipeDirection::Up,
+                Some(SwipeDirection::Up),
                 AttachType::Swipe(SwipeDirection::Up),
             ),
             _ => Decision::Nothing,
