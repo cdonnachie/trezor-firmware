@@ -38,35 +38,40 @@ pub enum GetAddress {
 
 impl FlowState for GetAddress {
     fn handle_swipe(&self, direction: SwipeDirection) -> Decision<Self> {
+        let attach = AttachType::Swipe(direction);
         match (self, direction) {
             (GetAddress::Address, SwipeDirection::Left) => {
-                Decision::Goto(GetAddress::Menu, direction)
+                Decision::Goto(GetAddress::Menu, direction, attach)
             }
-            (GetAddress::Address, SwipeDirection::Up) => Decision::Goto(GetAddress::Tap, direction),
+            (GetAddress::Address, SwipeDirection::Up) => {
+                Decision::Goto(GetAddress::Tap, direction, attach)
+            }
             (GetAddress::Tap, SwipeDirection::Down) => {
-                Decision::Goto(GetAddress::Address, direction)
+                Decision::Goto(GetAddress::Address, direction, attach)
             }
-            (GetAddress::Tap, SwipeDirection::Left) => Decision::Goto(GetAddress::Menu, direction),
+            (GetAddress::Tap, SwipeDirection::Left) => {
+                Decision::Goto(GetAddress::Menu, direction, attach)
+            }
             (GetAddress::Menu, SwipeDirection::Right) => {
-                Decision::Goto(GetAddress::Address, direction)
+                Decision::Goto(GetAddress::Address, direction, attach)
             }
             (GetAddress::QrCode, SwipeDirection::Right) => {
-                Decision::Goto(GetAddress::Menu, direction)
+                Decision::Goto(GetAddress::Menu, direction, attach)
             }
             (GetAddress::AccountInfo, SwipeDirection::Right) => {
-                Decision::Goto(GetAddress::Menu, SwipeDirection::Right)
+                Decision::Goto(GetAddress::Menu, direction, attach)
             }
             (GetAddress::Cancel, SwipeDirection::Up) => {
-                Decision::Goto(GetAddress::CancelTap, direction)
+                Decision::Goto(GetAddress::CancelTap, direction, attach)
             }
             (GetAddress::Cancel, SwipeDirection::Right) => {
-                Decision::Goto(GetAddress::Menu, direction)
+                Decision::Goto(GetAddress::Menu, direction, attach)
             }
             (GetAddress::CancelTap, SwipeDirection::Down) => {
-                Decision::Goto(GetAddress::Cancel, direction)
+                Decision::Goto(GetAddress::Cancel, direction, attach)
             }
             (GetAddress::CancelTap, SwipeDirection::Right) => {
-                Decision::Goto(GetAddress::Menu, direction)
+                Decision::Goto(GetAddress::Menu, direction, attach)
             }
             _ => Decision::Nothing,
         }
@@ -75,51 +80,63 @@ impl FlowState for GetAddress {
     fn handle_event(&self, msg: FlowMsg) -> Decision<Self> {
         match (self, msg) {
             (GetAddress::Address, FlowMsg::Info) => {
-                Decision::Goto(GetAddress::Menu, SwipeDirection::Left)
+                Decision::Goto(GetAddress::Menu, SwipeDirection::Left, AttachType::Initial)
             }
 
-            (GetAddress::Tap, FlowMsg::Confirmed) => {
-                Decision::Goto(GetAddress::Confirmed, SwipeDirection::Up)
-            }
+            (GetAddress::Tap, FlowMsg::Confirmed) => Decision::Goto(
+                GetAddress::Confirmed,
+                SwipeDirection::Up,
+                AttachType::Swipe(SwipeDirection::Up),
+            ),
 
             (GetAddress::Tap, FlowMsg::Info) => {
-                Decision::Goto(GetAddress::Menu, SwipeDirection::Left)
+                Decision::Goto(GetAddress::Menu, SwipeDirection::Left, AttachType::Initial)
             }
 
             (GetAddress::Confirmed, _) => Decision::Return(FlowMsg::Confirmed),
 
-            (GetAddress::Menu, FlowMsg::Choice(0)) => {
-                Decision::Goto(GetAddress::QrCode, SwipeDirection::Left)
-            }
+            (GetAddress::Menu, FlowMsg::Choice(0)) => Decision::Goto(
+                GetAddress::QrCode,
+                SwipeDirection::Left,
+                AttachType::Swipe(SwipeDirection::Left),
+            ),
 
-            (GetAddress::Menu, FlowMsg::Choice(1)) => {
-                Decision::Goto(GetAddress::AccountInfo, SwipeDirection::Left)
-            }
+            (GetAddress::Menu, FlowMsg::Choice(1)) => Decision::Goto(
+                GetAddress::AccountInfo,
+                SwipeDirection::Left,
+                AttachType::Swipe(SwipeDirection::Left),
+            ),
 
-            (GetAddress::Menu, FlowMsg::Choice(2)) => {
-                Decision::Goto(GetAddress::Cancel, SwipeDirection::Left)
-            }
+            (GetAddress::Menu, FlowMsg::Choice(2)) => Decision::Goto(
+                GetAddress::Cancel,
+                SwipeDirection::Left,
+                AttachType::Swipe(SwipeDirection::Left),
+            ),
 
-            (GetAddress::Menu, FlowMsg::Cancelled) => {
-                Decision::Goto(GetAddress::Address, SwipeDirection::Right)
-            }
+            (GetAddress::Menu, FlowMsg::Cancelled) => Decision::Goto(
+                GetAddress::Address,
+                SwipeDirection::Right,
+                AttachType::Swipe(SwipeDirection::Right),
+            ),
 
             (GetAddress::QrCode, FlowMsg::Cancelled) => {
-                Decision::Goto(GetAddress::Menu, SwipeDirection::Right)
+                Decision::Goto(GetAddress::Menu, SwipeDirection::Right, AttachType::Initial)
             }
 
-            (GetAddress::AccountInfo, FlowMsg::Cancelled) => {
-                Decision::Goto(GetAddress::Menu, SwipeDirection::Right)
-            }
+            (GetAddress::AccountInfo, FlowMsg::Cancelled) => Decision::Goto(
+                GetAddress::Menu,
+                SwipeDirection::Right,
+                AttachType::Swipe(SwipeDirection::Right),
+            ),
 
             (GetAddress::Cancel, FlowMsg::Cancelled) => {
-                Decision::Goto(GetAddress::Menu, SwipeDirection::Right)
+                Decision::Goto(GetAddress::Menu, SwipeDirection::Right, AttachType::Initial)
             }
 
             (GetAddress::CancelTap, FlowMsg::Confirmed) => Decision::Return(FlowMsg::Cancelled),
 
             (GetAddress::CancelTap, FlowMsg::Cancelled) => {
-                Decision::Goto(GetAddress::Menu, SwipeDirection::Right)
+                Decision::Goto(GetAddress::Menu, SwipeDirection::Right, AttachType::Initial)
             }
 
             _ => Decision::Nothing,
@@ -130,7 +147,9 @@ impl FlowState for GetAddress {
 use crate::{
     micropython::{map::Map, obj::Obj, util},
     ui::{
-        component::swipe_detect::SwipeSettings, flow::SwipePage, layout::obj::LayoutObj,
+        component::{base::AttachType, swipe_detect::SwipeSettings},
+        flow::SwipePage,
+        layout::obj::LayoutObj,
         model_mercury::component::SwipeContent,
     },
 };

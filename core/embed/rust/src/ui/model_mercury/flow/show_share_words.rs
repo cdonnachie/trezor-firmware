@@ -6,6 +6,7 @@ use crate::{
     ui::{
         button_request::ButtonRequestCode,
         component::{
+            base::AttachType,
             swipe_detect::SwipeSettings,
             text::paragraphs::{Paragraph, ParagraphSource, ParagraphVecShort, Paragraphs, VecExt},
             ButtonRequestExt, ComponentExt, SwipeDirection,
@@ -33,18 +34,19 @@ pub enum ShowShareWords {
 
 impl FlowState for ShowShareWords {
     fn handle_swipe(&self, direction: SwipeDirection) -> Decision<Self> {
+        let attach = AttachType::Swipe(direction);
         match (self, direction) {
             (ShowShareWords::Instruction, SwipeDirection::Up) => {
-                Decision::Goto(ShowShareWords::Words, direction)
+                Decision::Goto(ShowShareWords::Words, direction, attach)
             }
             (ShowShareWords::Confirm, SwipeDirection::Down) => {
-                Decision::Goto(ShowShareWords::Words, direction)
+                Decision::Goto(ShowShareWords::Words, direction, attach)
             }
             (ShowShareWords::Words, SwipeDirection::Up) => {
-                Decision::Goto(ShowShareWords::Confirm, direction)
+                Decision::Goto(ShowShareWords::Confirm, direction, attach)
             }
             (ShowShareWords::Words, SwipeDirection::Down) => {
-                Decision::Goto(ShowShareWords::Instruction, direction)
+                Decision::Goto(ShowShareWords::Instruction, direction, attach)
             }
             (ShowShareWords::CheckBackupIntro, SwipeDirection::Up) => {
                 Decision::Return(FlowMsg::Confirmed)
@@ -55,15 +57,21 @@ impl FlowState for ShowShareWords {
 
     fn handle_event(&self, msg: FlowMsg) -> Decision<Self> {
         match (self, msg) {
-            (ShowShareWords::Words, FlowMsg::Cancelled) => {
-                Decision::Goto(ShowShareWords::Instruction, SwipeDirection::Down)
-            }
-            (ShowShareWords::Words, FlowMsg::Confirmed) => {
-                Decision::Goto(ShowShareWords::Confirm, SwipeDirection::Up)
-            }
-            (ShowShareWords::Confirm, FlowMsg::Confirmed) => {
-                Decision::Goto(ShowShareWords::CheckBackupIntro, SwipeDirection::Up)
-            }
+            (ShowShareWords::Words, FlowMsg::Cancelled) => Decision::Goto(
+                ShowShareWords::Instruction,
+                SwipeDirection::Down,
+                AttachType::Swipe(SwipeDirection::Down),
+            ),
+            (ShowShareWords::Words, FlowMsg::Confirmed) => Decision::Goto(
+                ShowShareWords::Confirm,
+                SwipeDirection::Up,
+                AttachType::Swipe(SwipeDirection::Up),
+            ),
+            (ShowShareWords::Confirm, FlowMsg::Confirmed) => Decision::Goto(
+                ShowShareWords::CheckBackupIntro,
+                SwipeDirection::Up,
+                AttachType::Swipe(SwipeDirection::Up),
+            ),
             _ => Decision::Nothing,
         }
     }

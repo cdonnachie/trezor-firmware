@@ -29,48 +29,65 @@ pub enum ConfirmSummary {
 
 impl FlowState for ConfirmSummary {
     fn handle_swipe(&self, direction: SwipeDirection) -> Decision<Self> {
+        let attach = AttachType::Swipe(direction);
         match (self, direction) {
             (ConfirmSummary::Summary | ConfirmSummary::Hold, SwipeDirection::Left) => {
-                Decision::Goto(ConfirmSummary::Menu, direction)
+                Decision::Goto(ConfirmSummary::Menu, direction, attach)
             }
             (ConfirmSummary::Summary, SwipeDirection::Up) => {
-                Decision::Goto(ConfirmSummary::Hold, direction)
+                Decision::Goto(ConfirmSummary::Hold, direction, attach)
             }
             (ConfirmSummary::Hold, SwipeDirection::Down) => {
-                Decision::Goto(ConfirmSummary::Summary, direction)
+                Decision::Goto(ConfirmSummary::Summary, direction, attach)
             }
             (ConfirmSummary::Menu, SwipeDirection::Right) => {
-                Decision::Goto(ConfirmSummary::Summary, direction)
+                Decision::Goto(ConfirmSummary::Summary, direction, attach)
             }
             (ConfirmSummary::Menu, SwipeDirection::Left) => {
-                Decision::Goto(ConfirmSummary::FeeInfo, direction)
+                Decision::Goto(ConfirmSummary::FeeInfo, direction, attach)
             }
             (
                 ConfirmSummary::AccountInfo | ConfirmSummary::FeeInfo | ConfirmSummary::CancelTap,
                 SwipeDirection::Right,
-            ) => Decision::Goto(ConfirmSummary::Menu, direction),
+            ) => Decision::Goto(ConfirmSummary::Menu, direction, attach),
             _ => Decision::Nothing,
         }
     }
 
     fn handle_event(&self, msg: FlowMsg) -> Decision<Self> {
         match (self, msg) {
-            (_, FlowMsg::Info) => Decision::Goto(ConfirmSummary::Menu, SwipeDirection::Left),
+            (_, FlowMsg::Info) => Decision::Goto(
+                ConfirmSummary::Menu,
+                SwipeDirection::Left,
+                AttachType::Initial,
+            ),
             (ConfirmSummary::Hold, FlowMsg::Confirmed) => Decision::Return(FlowMsg::Confirmed),
-            (ConfirmSummary::Menu, FlowMsg::Choice(0)) => {
-                Decision::Goto(ConfirmSummary::FeeInfo, SwipeDirection::Left)
-            }
-            (ConfirmSummary::Menu, FlowMsg::Choice(1)) => {
-                Decision::Goto(ConfirmSummary::AccountInfo, SwipeDirection::Left)
-            }
-            (ConfirmSummary::Menu, FlowMsg::Choice(2)) => {
-                Decision::Goto(ConfirmSummary::CancelTap, SwipeDirection::Left)
-            }
-            (ConfirmSummary::Menu, FlowMsg::Cancelled) => {
-                Decision::Goto(ConfirmSummary::Summary, SwipeDirection::Right)
-            }
+            (ConfirmSummary::Menu, FlowMsg::Choice(0)) => Decision::Goto(
+                ConfirmSummary::FeeInfo,
+                SwipeDirection::Left,
+                AttachType::Swipe(SwipeDirection::Left),
+            ),
+            (ConfirmSummary::Menu, FlowMsg::Choice(1)) => Decision::Goto(
+                ConfirmSummary::AccountInfo,
+                SwipeDirection::Left,
+                AttachType::Swipe(SwipeDirection::Left),
+            ),
+            (ConfirmSummary::Menu, FlowMsg::Choice(2)) => Decision::Goto(
+                ConfirmSummary::CancelTap,
+                SwipeDirection::Left,
+                AttachType::Swipe(SwipeDirection::Left),
+            ),
+            (ConfirmSummary::Menu, FlowMsg::Cancelled) => Decision::Goto(
+                ConfirmSummary::Summary,
+                SwipeDirection::Right,
+                AttachType::Swipe(SwipeDirection::Right),
+            ),
             (ConfirmSummary::CancelTap, FlowMsg::Confirmed) => Decision::Return(FlowMsg::Cancelled),
-            (_, FlowMsg::Cancelled) => Decision::Goto(ConfirmSummary::Menu, SwipeDirection::Right),
+            (_, FlowMsg::Cancelled) => Decision::Goto(
+                ConfirmSummary::Menu,
+                SwipeDirection::Right,
+                AttachType::Initial,
+            ),
             _ => Decision::Nothing,
         }
     }
@@ -79,7 +96,8 @@ impl FlowState for ConfirmSummary {
 use crate::{
     micropython::{map::Map, obj::Obj, util},
     ui::{
-        component::swipe_detect::SwipeSettings, layout::obj::LayoutObj,
+        component::{base::AttachType, swipe_detect::SwipeSettings},
+        layout::obj::LayoutObj,
         model_mercury::component::SwipeContent,
     },
 };

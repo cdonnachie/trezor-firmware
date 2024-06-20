@@ -49,16 +49,19 @@ impl<Q: FlowState, S: FlowStore> SwipeFlow<Q, S> {
             decision_override: None,
         })
     }
-    fn goto(&mut self, ctx: &mut EventCtx, direction: SwipeDirection, state: Q) {
+    fn goto(
+        &mut self,
+        ctx: &mut EventCtx,
+        direction: SwipeDirection,
+        attach_type: AttachType,
+        state: Q,
+    ) {
         self.state = state;
         self.swipe = SwipeDetect::new();
         self.allow_swipe = true;
 
-        self.store.event(
-            state.index(),
-            ctx,
-            Event::Attach(AttachType::Swipe(direction)),
-        );
+        self.store
+            .event(state.index(), ctx, Event::Attach(attach_type));
 
         self.internal_pages = self.store.get_internal_page_count(state.index()) as u16;
 
@@ -210,7 +213,7 @@ impl<Q: FlowState, S: FlowStore> Component for SwipeFlow<Q, S> {
 
                     let config = self.store.get_swipe_config(self.state.index());
 
-                    if let Decision::Goto(_, direction) = decision {
+                    if let Decision::Goto(_, direction, _) = decision {
                         if config.is_allowed(direction) {
                             if !animation_disabled() {
                                 self.swipe.trigger(ctx, direction, config);
@@ -229,8 +232,8 @@ impl<Q: FlowState, S: FlowStore> Component for SwipeFlow<Q, S> {
         }
 
         match decision {
-            Decision::Goto(next_state, direction) => {
-                self.goto(ctx, direction, next_state);
+            Decision::Goto(next_state, direction, attach) => {
+                self.goto(ctx, direction, attach, next_state);
                 None
             }
             Decision::Return(msg) => {

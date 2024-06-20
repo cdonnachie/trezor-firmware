@@ -29,22 +29,27 @@ pub enum SetNewPin {
 
 impl FlowState for SetNewPin {
     fn handle_swipe(&self, direction: SwipeDirection) -> Decision<Self> {
+        let attach = AttachType::Swipe(direction);
         match (self, direction) {
-            (SetNewPin::Intro, SwipeDirection::Left) => Decision::Goto(SetNewPin::Menu, direction),
+            (SetNewPin::Intro, SwipeDirection::Left) => {
+                Decision::Goto(SetNewPin::Menu, direction, attach)
+            }
             (SetNewPin::Intro, SwipeDirection::Up) => Decision::Return(FlowMsg::Confirmed),
 
-            (SetNewPin::Menu, SwipeDirection::Right) => Decision::Goto(SetNewPin::Intro, direction),
+            (SetNewPin::Menu, SwipeDirection::Right) => {
+                Decision::Goto(SetNewPin::Intro, direction, attach)
+            }
             (SetNewPin::CancelPinIntro, SwipeDirection::Up) => {
-                Decision::Goto(SetNewPin::CancelPinConfirm, direction)
+                Decision::Goto(SetNewPin::CancelPinConfirm, direction, attach)
             }
             (SetNewPin::CancelPinIntro, SwipeDirection::Right) => {
-                Decision::Goto(SetNewPin::Intro, direction)
+                Decision::Goto(SetNewPin::Intro, direction, attach)
             }
             (SetNewPin::CancelPinConfirm, SwipeDirection::Down) => {
-                Decision::Goto(SetNewPin::CancelPinIntro, direction)
+                Decision::Goto(SetNewPin::CancelPinIntro, direction, attach)
             }
             (SetNewPin::CancelPinConfirm, SwipeDirection::Right) => {
-                Decision::Goto(SetNewPin::Intro, direction)
+                Decision::Goto(SetNewPin::Intro, direction, attach)
             }
             _ => Decision::Nothing,
         }
@@ -53,20 +58,28 @@ impl FlowState for SetNewPin {
     fn handle_event(&self, msg: FlowMsg) -> Decision<Self> {
         match (self, msg) {
             (SetNewPin::Intro, FlowMsg::Info) => {
-                Decision::Goto(SetNewPin::Menu, SwipeDirection::Left)
+                Decision::Goto(SetNewPin::Menu, SwipeDirection::Left, AttachType::Initial)
             }
-            (SetNewPin::Menu, FlowMsg::Choice(0)) => {
-                Decision::Goto(SetNewPin::CancelPinIntro, SwipeDirection::Left)
-            }
-            (SetNewPin::Menu, FlowMsg::Cancelled) => {
-                Decision::Goto(SetNewPin::Intro, SwipeDirection::Right)
-            }
-            (SetNewPin::CancelPinIntro, FlowMsg::Cancelled) => {
-                Decision::Goto(SetNewPin::Intro, SwipeDirection::Right)
-            }
-            (SetNewPin::CancelPinConfirm, FlowMsg::Cancelled) => {
-                Decision::Goto(SetNewPin::CancelPinIntro, SwipeDirection::Right)
-            }
+            (SetNewPin::Menu, FlowMsg::Choice(0)) => Decision::Goto(
+                SetNewPin::CancelPinIntro,
+                SwipeDirection::Left,
+                AttachType::Swipe(SwipeDirection::Left),
+            ),
+            (SetNewPin::Menu, FlowMsg::Cancelled) => Decision::Goto(
+                SetNewPin::Intro,
+                SwipeDirection::Right,
+                AttachType::Swipe(SwipeDirection::Right),
+            ),
+            (SetNewPin::CancelPinIntro, FlowMsg::Cancelled) => Decision::Goto(
+                SetNewPin::Intro,
+                SwipeDirection::Right,
+                AttachType::Swipe(SwipeDirection::Right),
+            ),
+            (SetNewPin::CancelPinConfirm, FlowMsg::Cancelled) => Decision::Goto(
+                SetNewPin::CancelPinIntro,
+                SwipeDirection::Right,
+                AttachType::Swipe(SwipeDirection::Right),
+            ),
             (SetNewPin::CancelPinConfirm, FlowMsg::Confirmed) => {
                 Decision::Return(FlowMsg::Cancelled)
             }
@@ -78,7 +91,7 @@ impl FlowState for SetNewPin {
 use crate::{
     micropython::{map::Map, obj::Obj, util},
     ui::{
-        component::swipe_detect::SwipeSettings,
+        component::{base::AttachType, swipe_detect::SwipeSettings},
         flow::{flow_store, SwipeFlow},
         layout::obj::LayoutObj,
         model_mercury::component::SwipeContent,
