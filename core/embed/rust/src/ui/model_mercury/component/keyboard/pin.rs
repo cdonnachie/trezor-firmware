@@ -156,7 +156,6 @@ impl AttachAnimation {
 struct CloseAnimation {
     pub attach_top: bool,
     pub timer: Stopwatch,
-    pub active: bool,
     pub duration: Duration,
 }
 impl CloseAnimation {
@@ -223,7 +222,6 @@ impl CloseAnimation {
     }
 
     fn reset(&mut self) {
-        self.active = false;
         self.timer = Stopwatch::new_stopped();
     }
 
@@ -232,19 +230,13 @@ impl CloseAnimation {
         self.duration = Duration::from_millis(Self::DURATION_MS);
         self.reset();
         self.timer.start();
-        self.active =true;
-
         ctx.request_anim_frame();
         ctx.request_paint();
     }
     fn process(&mut self, ctx: &mut EventCtx, event: Event) {
 
         if let Event::Timer(EventCtx::ANIM_FRAME_TIMER) = event {
-            if self.is_active() {
-                ctx.request_anim_frame();
-                ctx.request_paint();
-            } else if self.active {
-                self.active = false;
+            if self.is_active() && !self.is_finished(){
                 ctx.request_anim_frame();
                 ctx.request_paint();
             }
@@ -414,9 +406,7 @@ impl Component for PinKeyboard<'_> {
     }
 
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
-        self.attach_animation.lazy_start(ctx, event);
         self.close_animation.process(ctx, event);
-
         if self.close_animation.is_finished() {
             return Some(if self.close_confirm {
                 PinKeyboardMsg::Confirmed
@@ -424,6 +414,8 @@ impl Component for PinKeyboard<'_> {
                 PinKeyboardMsg::Cancelled
             });
         }
+
+        self.attach_animation.lazy_start(ctx, event);
 
         match event {
             // Set up timer to switch off warning prompt.
