@@ -113,7 +113,7 @@ class Handshake:
         point = curve25519.multiply(trezor_static_privkey, host_ephemeral_pubkey)
         self.ck, self.k = _hkdf(self.ck, curve25519.multiply(mask, point))
         # 11
-        aes_ctx.reset(IV_1)
+        aes_ctx = aesgcm(self.k, IV_1)
         aes_ctx.auth(self.h)
         tag = aes_ctx.finish()
         # 12
