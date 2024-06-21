@@ -152,6 +152,106 @@ impl AttachAnimation {
     }
 }
 
+#[derive(Default, Clone)]
+struct CloseAnimation {
+    pub attach_top: bool,
+    pub timer: Stopwatch,
+    pub active: bool,
+    pub duration: Duration,
+}
+impl CloseAnimation {
+    const DURATION_MS: u32 = 350;
+    fn is_active(&self) -> bool {
+        if animation_disabled() {
+            return false;
+        }
+
+        self.timer.is_running_within(self.duration)
+    }
+
+    fn is_finished(&self) -> bool {
+        if animation_disabled() {
+            return true;
+        }
+
+        self.timer.is_running() && !self.timer.is_running_within(self.duration)
+    }
+
+    fn eval(&self) -> f32 {
+        if animation_disabled() {
+            return 1.0;
+        }
+
+        self.timer.elapsed().to_millis() as f32 / 1000.0
+    }
+
+    fn opacity(&self, t: f32, pos_x: usize, pos_y: usize) -> u8 {
+        if animation_disabled() {
+            return 255;
+        }
+
+        let diag = pos_x + pos_y;
+
+        let start = diag as f32 * 0.05;
+
+        let f = pareen::constant(1.0)
+            .seq_ease_in_out(
+                start,
+                easer::functions::Cubic,
+                0.1,
+                pareen::constant(0.0).eval(self.eval()),
+            )
+            .eval(t);
+
+        (f * 255.0) as u8
+    }
+
+    fn header_opacity(&self, t: f32) -> u8 {
+        if animation_disabled() {
+            return 255;
+        }
+        let f = pareen::constant(1.0)
+            .seq_ease_in_out(
+                0.30,
+                easer::functions::Linear,
+                0.05,
+                pareen::constant(0.0).eval(self.eval()),
+            )
+            .eval(t);
+
+        (f * 255.0) as u8
+    }
+
+    fn reset(&mut self) {
+        self.active = false;
+        self.timer = Stopwatch::new_stopped();
+    }
+
+
+    fn start(&mut self, ctx: &mut EventCtx) {
+        self.duration = Duration::from_millis(Self::DURATION_MS);
+        self.reset();
+        self.timer.start();
+        self.active =true;
+
+        ctx.request_anim_frame();
+        ctx.request_paint();
+    }
+    fn process(&mut self, ctx: &mut EventCtx, event: Event) {
+
+        if let Event::Timer(EventCtx::ANIM_FRAME_TIMER) = event {
+            if self.is_active() {
+                ctx.request_anim_frame();
+                ctx.request_paint();
+            } else if self.active {
+                self.active = false;
+                ctx.request_anim_frame();
+                ctx.request_paint();
+            }
+        }
+    }
+}
+
 pub struct PinKeyboard<'a> {
     allow_cancel: bool,
     show_erase: bool,
@@ -168,6 +268,8 @@ pub struct PinKeyboard<'a> {
     digit_btns: [(Button, usize); DIGIT_COUNT],
     warning_timer: Option<TimerToken>,
     attach_animation: AttachAnimation,
+    close_animation: CloseAnimation,
+    close_confirm: bool,
 }
 
 impl<'a> PinKeyboard<'a> {
@@ -207,6 +309,8 @@ impl<'a> PinKeyboard<'a> {
             digit_btns: Self::generate_digit_buttons(),
             warning_timer: None,
             attach_animation: AttachAnimation::default(),
+            close_animation: CloseAnimation::default(),
+            close_confirm: false,
         }
     }
 
@@ -250,6 +354,17 @@ impl<'a> PinKeyboard<'a> {
 
     pub fn pin(&self) -> &str {
         self.textbox.inner().pin()
+    }
+
+
+    fn get_button_alpha(&self, x: usize, y:usize,  attach_time: f32, close_time: f32) -> u8 {
+        self.attach_animation.opacity(attach_time, x, y)
+            .min(self.close_animation.opacity(close_time, x, y))
+    }
+
+    fn get_textbox_alpha(&self, attach_time: f32, close_time: f32) -> u8 {
+        self.attach_animation.header_opacity(attach_time)
+            .min(self.close_animation.header_opacity(close_time))
     }
 }
 
@@ -300,6 +415,15 @@ impl Component for PinKeyboard<'_> {
 
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
         self.attach_animation.lazy_start(ctx, event);
+        self.close_animation.process(ctx, event);
+
+        if self.close_animation.is_finished() {
+            return Some(if self.close_confirm {
+                PinKeyboardMsg::Confirmed
+            } else {
+                PinKeyboardMsg::Cancelled
+            });
+        }
 
         match event {
             // Set up timer to switch off warning prompt.
@@ -315,12 +439,27 @@ impl Component for PinKeyboard<'_> {
             _ => {}
         }
 
+        // do not process buttons when closing
+        if self.close_animation.is_active() {
+            return None;
+        }
+
         self.textbox.event(ctx, event);
         if let Some(Clicked) = self.confirm_btn.event(ctx, event) {
-            return Some(PinKeyboardMsg::Confirmed);
+            if animation_disabled() {
+                return Some(PinKeyboardMsg::Confirmed);
+            } else {
+                self.close_animation.start(ctx);
+                self.close_confirm = true;
+            }
         }
         if let Some(Clicked) = self.cancel_btn.event(ctx, event) {
-            return Some(PinKeyboardMsg::Cancelled);
+            if animation_disabled() {
+                return Some(PinKeyboardMsg::Cancelled);
+            } else {
+                self.close_animation.start(ctx);
+                self.close_confirm = false;
+            }
         }
         match self.erase_btn.event(ctx, event) {
             Some(ButtonMsg::Clicked) => {
@@ -354,9 +493,10 @@ impl Component for PinKeyboard<'_> {
     }
 
     fn render<'s>(&'s self, target: &mut impl Renderer<'s>) {
-        let t = self.attach_animation.eval();
+        let t_attach = self.attach_animation.eval();
+        let t_close = self.close_animation.eval();
 
-        let erase_alpha = self.attach_animation.opacity(t, 0, 3);
+        let erase_alpha = self.get_button_alpha(0, 3, t_attach, t_close);
 
         if self.show_erase {
             self.erase_btn.render_with_alpha(target, erase_alpha);
@@ -379,14 +519,14 @@ impl Component for PinKeyboard<'_> {
         shape::Bar::new(self.textbox_area)
             .with_bg(theme::label_default().background_color)
             .with_fg(theme::label_default().background_color)
-            .with_alpha(255 - self.attach_animation.header_opacity(t))
+            .with_alpha(255 - self.get_textbox_alpha(t_attach, t_close))
             .render(target);
 
-        let alpha = self.attach_animation.opacity(t, 2, 3);
+        let alpha = self.get_button_alpha(2, 3, t_attach, t_close);
         self.confirm_btn.render_with_alpha(target, alpha);
 
         for btn in &self.digit_btns {
-            let alpha = self.attach_animation.opacity(t, btn.1 % 3, btn.1 / 3);
+            let alpha = self.get_button_alpha(btn.1 % 3, btn.1 / 3, t_attach, t_close);
             btn.0.render_with_alpha(target, alpha);
         }
 
