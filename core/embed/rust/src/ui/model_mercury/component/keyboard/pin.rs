@@ -241,7 +241,7 @@ impl<'a> PinKeyboard<'a> {
         }
 
         self.show_erase = !is_empty;
-        self.show_cancel = cancel_enabled;
+        self.show_cancel = cancel_enabled && is_empty;
 
         self.erase_btn.enable_if(ctx, !is_empty);
         self.cancel_btn.enable_if(ctx, is_empty);
@@ -357,7 +357,10 @@ impl Component for PinKeyboard<'_> {
         let t = self.attach_animation.eval();
 
         let erase_alpha = self.attach_animation.opacity(t, 0, 3);
-        self.erase_btn.render_with_alpha(target, erase_alpha);
+
+        if self.show_erase {
+            self.erase_btn.render_with_alpha(target, erase_alpha);
+        }
 
         if self.textbox.inner().is_empty() {
             if let Some(ref w) = self.major_warning {
@@ -366,7 +369,9 @@ impl Component for PinKeyboard<'_> {
                 self.major_prompt.render(target);
             }
             self.minor_prompt.render(target);
-            self.cancel_btn.render_with_alpha(target, erase_alpha);
+            if self.show_cancel {
+                self.cancel_btn.render_with_alpha(target, erase_alpha);
+            }
         } else {
             self.textbox.render(target);
         }
