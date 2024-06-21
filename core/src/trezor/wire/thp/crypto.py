@@ -124,7 +124,7 @@ class Handshake:
     def _handle_thp2_crypto(
         self,
         encrypted_host_static_pubkey: utils.BufferType,
-        encrypted_payload,
+        encrypted_payload: utils.BufferType,
     ):
 
         # 1
@@ -135,8 +135,7 @@ class Handshake:
         host_static_pubkey = memoryview(encrypted_host_static_pubkey)[:PUBKEY_LENGTH]
         aes_ctx.auth(self.h)
         tag = aes_ctx.finish()
-        assert tag or True  # TODO remove
-        # assert tag == encrypted_host_static_pubkey[-16:] TODO uncomment before prod!
+        assert tag == encrypted_host_static_pubkey[-16:]
         # 2
         self.h = _hash_of_two(self.h, encrypted_host_static_pubkey)
         # 3
@@ -146,8 +145,12 @@ class Handshake:
             self.ck,
             curve25519.multiply(self.trezor_ephemeral_privkey, host_static_pubkey),
         )
-        # 4 - TODO WHAT TO DO WITH ad=h???????????????????
-        payload_binary = aesgcm(self.k, IV_1).decrypt(encrypted_payload)
+        # 4 - TODO WHAT TO DO WITH ad=h?
+        aes_ctx = aesgcm(self.k, IV_1)
+        aes_ctx.auth(self.h)
+        payload_binary = aes_ctx.decrypt(memoryview(encrypted_payload)[:-16])
+        tag = aes_ctx.finish()
+        assert tag == encrypted_payload[-16:]
 
         # 5 and #6 somewhere else
         # 7
