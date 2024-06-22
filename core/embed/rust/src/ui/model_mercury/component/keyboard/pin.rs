@@ -211,9 +211,9 @@ impl CloseAnimation {
         }
         let f = pareen::constant(1.0)
             .seq_ease_in_out(
-                0.30,
+                0.10,
                 easer::functions::Linear,
-                0.05,
+                0.25,
                 pareen::constant(0.0).eval(self.eval()),
             )
             .eval(t);
