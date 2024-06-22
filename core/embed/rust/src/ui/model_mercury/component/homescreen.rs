@@ -83,6 +83,99 @@ fn render_default_hs<'a>(target: &mut impl Renderer<'a>) {
         .render(target);
 }
 
+
+static mut RENDERED_OPACITY: u8 = 255;
+
+#[derive(Default, Clone)]
+struct AttachAnimation {
+    pub timer: Stopwatch,
+    pub active: bool,
+    pub duration: Duration,
+    start_opacity: f32,
+}
+
+impl AttachAnimation {
+    const DURATION_MS: u32 = 500;
+
+    pub fn new(start_opacity: u8) -> Self {
+
+        let start_opacity = start_opacity as f32 / 255.0;
+
+        let duration = start_opacity * Self::DURATION_MS as f32;
+
+        Self {
+            timer: Stopwatch::new_stopped(),
+            active: false,
+            duration: Duration::from_millis(duration as u32),
+            start_opacity
+        }
+    }
+
+    fn is_active(&self) -> bool {
+        if animation_disabled() {
+            return false;
+        }
+
+        self.timer.is_running_within(self.duration)
+    }
+
+    fn eval(&self) -> f32 {
+        if animation_disabled() {
+            return 1.0;
+        }
+
+        self.timer.elapsed().to_millis() as f32 / 1000.0
+    }
+
+    fn opacity(&self, t: f32) -> u8 {
+        if animation_disabled() {
+            return 255;
+        }
+
+        let f = pareen::constant(self.start_opacity)
+            .seq_ease_in_out(
+                0.0,
+                easer::functions::Linear,
+                self.duration.to_millis() as f32 / 1000.0,
+                pareen::constant(1.0),
+            )
+            .eval(t);
+
+        (f * 255.0) as u8
+    }
+
+    fn start(&mut self) {
+        self.active = true;
+        self.timer.start();
+    }
+
+    fn reset(&mut self) {
+        self.active = false;
+        self.timer = Stopwatch::new_stopped();
+    }
+
+    fn lazy_start(&mut self, ctx: &mut EventCtx, event: Event) {
+        if let Event::Attach(_) = event {
+            self.duration = Duration::from_millis(Self::DURATION_MS);
+            self.reset();
+            ctx.request_anim_frame();
+        }
+        if let Event::Timer(EventCtx::ANIM_FRAME_TIMER) = event {
+            if !self.timer.is_running() {
+                self.start();
+            }
+            if self.is_active() {
+                ctx.request_anim_frame();
+                ctx.request_paint();
+            } else if self.active {
+                self.active = false;
+                ctx.request_anim_frame();
+                ctx.request_paint();
+            }
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 pub struct HomescreenNotification {
     pub text: TString<'static>,
@@ -99,6 +192,7 @@ pub struct Homescreen {
     hold_to_lock: bool,
     loader: Loader,
     delay: Option<TimerToken>,
+    attach_animation: Option<AttachAnimation>,
 }
 
 pub enum HomescreenMsg {
@@ -110,9 +204,23 @@ impl Homescreen {
         label: TString<'static>,
         notification: Option<(TString<'static>, u8)>,
         hold_to_lock: bool,
+        anim_attach: bool,
     ) -> Self {
         let label_width = label.map(|t| theme::TEXT_DEMIBOLD.text_font.text_width(t));
         let label_height = label.map(|t| theme::TEXT_DEMIBOLD.text_font.visible_text_height(t));
+
+        let start = unsafe {
+             if anim_attach {
+                RENDERED_OPACITY = 0;
+                 Some(0)
+            } else {
+                if RENDERED_OPACITY < 255 {
+                    Some(RENDERED_OPACITY)
+                } else {
+                    None
+                }
+            }
+        };
 
         Self {
             label: Label::new(label, Alignment::Center, theme::TEXT_DEMIBOLD).vertically_centered(),
@@ -123,6 +231,7 @@ impl Homescreen {
             hold_to_lock,
             loader: Loader::with_lock_icon().with_durations(LOADER_DURATION, LOADER_DURATION / 3),
             delay: None,
+            attach_animation: start.map(|o| AttachAnimation::new(o)),
         }
     }
 
@@ -223,6 +332,11 @@ impl Component for Homescreen {
     }
 
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
+
+        if let Some(a) = &mut self.attach_animation {
+            a.lazy_start(ctx, event);
+        }
+
         Self::event_usb(self, ctx, event);
         if self.hold_to_lock {
             Self::event_hold(self, ctx, event).then_some(HomescreenMsg::Dismissed)
@@ -239,6 +353,14 @@ impl Component for Homescreen {
         if self.loader.is_animating() || self.loader.is_completely_grown(Instant::now()) {
             self.render_loader(target);
         } else {
+
+            let opacity = if let Some(attach_animation) = &self.attach_animation {
+                let t = attach_animation.eval();
+                attach_animation.opacity(t)
+            } else {
+                255
+            };
+
             if let Some(image) = self.image {
                 if let ImageInfo::Jpeg(_) = ImageInfo::parse(image) {
                     shape::JpegImage::new_image(AREA.center(), image)
@@ -301,6 +423,15 @@ impl Component for Homescreen {
                         .render(target);
                 });
             }
+
+            shape::Bar::new(AREA)
+                .with_bg(Color::black())
+                .with_alpha(255 - opacity)
+                .render(target);
+
+            unsafe {
+                RENDERED_OPACITY = opacity;
+            }
         }
     }
 
@@ -344,6 +475,7 @@ impl LockscreenAnim {
 
 pub struct Lockscreen {
     anim: LockscreenAnim,
+    attach_animation: Option<AttachAnimation>,
     label: Label<'static>,
     label_width: i16,
     label_height: i16,
@@ -354,7 +486,21 @@ pub struct Lockscreen {
 }
 
 impl Lockscreen {
-    pub fn new(label: TString<'static>, bootscreen: bool, coinjoin_authorized: bool) -> Self {
+    pub fn new(label: TString<'static>, bootscreen: bool, coinjoin_authorized: bool, anim_attach: bool) -> Self {
+        let start = unsafe {
+            if anim_attach {
+                RENDERED_OPACITY = 0;
+                Some(0)
+            } else {
+                if RENDERED_OPACITY < 255 {
+                    Some(RENDERED_OPACITY)
+                } else {
+                    None
+                }
+            }
+        };
+
+
         let image = get_homescreen_image();
         let mut buf = unwrap!(ImageBuffer::new(AREA.size()), "no image buf");
 
@@ -371,6 +517,7 @@ impl Lockscreen {
 
         Lockscreen {
             anim: LockscreenAnim::default(),
+            attach_animation: start.map(|o| AttachAnimation::new(o)),
             label: Label::new(label, Alignment::Center, theme::TEXT_DEMIBOLD),
             label_width,
             label_height,
@@ -392,6 +539,10 @@ impl Component for Lockscreen {
     }
 
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
+
+        if let Some(a) = &mut self.attach_animation {
+            a.lazy_start(ctx, event);
+        }
         if let Event::Attach(_) = event {
             ctx.request_anim_frame();
         }
@@ -493,6 +644,23 @@ impl Component for Lockscreen {
         });
 
         // TODO coinjoin authorized text
+
+        let opacity = if let Some(attach_animation) = &self.attach_animation {
+            let t = attach_animation.eval();
+            attach_animation.opacity(t)
+        } else {
+            255
+        };
+
+        shape::Bar::new(AREA)
+            .with_bg(Color::black())
+            .with_fg(Color::black())
+            .with_alpha(255 - opacity)
+            .render(target);
+
+        unsafe {
+            RENDERED_OPACITY = opacity;
+        }
     }
 }
 

@@ -54,7 +54,8 @@ async def bootscreen() -> None:
 
             if can_lock_device():
                 enforce_welcome_screen_duration()
-                ui.backlight_fade(ui.BacklightLevels.NONE)
+                if utils.INTERNAL_MODEL == "T2T1":
+                    ui.backlight_fade(ui.BacklightLevels.NONE)
                 ui.display.orientation(storage.device.get_rotation())
                 if utils.USE_HAPTIC:
                     io.haptic.haptic_set_enabled(storage.device.get_haptic_feedback())

@@ -1228,7 +1228,7 @@ extern "C" fn new_show_homescreen(n_args: usize, args: *const Obj, kwargs: *mut 
         let skip_first_paint: bool = kwargs.get(Qstr::MP_QSTR_skip_first_paint)?.try_into()?;
 
         let notification = notification.map(|w| (w, notification_level));
-        let obj = LayoutObj::new(Homescreen::new(label, notification, hold))?;
+        let obj = LayoutObj::new(Homescreen::new(label, notification, hold, !skip_first_paint))?;
         if skip_first_paint {
             obj.skip_first_paint();
         }
@@ -1247,7 +1247,7 @@ extern "C" fn new_show_lockscreen(n_args: usize, args: *const Obj, kwargs: *mut 
         let coinjoin_authorized: bool = kwargs.get_or(Qstr::MP_QSTR_coinjoin_authorized, false)?;
         let skip_first_paint: bool = kwargs.get(Qstr::MP_QSTR_skip_first_paint)?.try_into()?;
 
-        let obj = LayoutObj::new(Lockscreen::new(label, bootscreen, coinjoin_authorized))?;
+        let obj = LayoutObj::new(Lockscreen::new(label, bootscreen, coinjoin_authorized, !skip_first_paint))?;
         if skip_first_paint {
             obj.skip_first_paint();
         }
