@@ -418,8 +418,13 @@ uint32_t touch_get_event(void) {
       // Finger was just lifted up
       event = TOUCH_END | xy;
     } else {
+
       // 1. Most likely, we have missed the PRESS_DOWN event.
-      //    Touch duration was too short (< 20ms) to be worth reporting.
+      if ((x != driver->last_x) || (y != driver->last_y)) {
+        // Report the move event only if the coordinates
+        // have changed
+        event = TOUCH_START | xy;
+      }
       // 2. Finger is still lifted up. Since we have already sent the
       //    TOUCH_END event => no event needed. This should not happen
       //    since two consecutive LIFT_UPs are not possible due to
