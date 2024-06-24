@@ -1312,7 +1312,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     /// T = TypeVar("T")
     ///
     /// class AttachType:
-    ///     pass
+    ///     ...
     ///
     /// class LayoutObj(Generic[T]):
     ///     """Representation of a Rust-based layout object.

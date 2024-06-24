@@ -2,6 +2,7 @@ use core::{
     cell::RefCell,
     convert::{TryFrom, TryInto},
 };
+use num_traits::{FromPrimitive, ToPrimitive};
 
 use crate::{
     error::Error,
@@ -36,36 +37,27 @@ use crate::ui::event::USBEvent;
 #[cfg(feature = "touch")]
 use crate::ui::{component::SwipeDirection, event::TouchEvent};
 
-impl From<AttachType> for Obj {
-    fn from(value: AttachType) -> Self {
-        match value {
-            AttachType::Initial => 0u16.into(),
+impl AttachType {
+    fn to_obj(&self) -> Obj {
+        match self {
+            Self::Initial => Obj::const_none(),
             #[cfg(feature = "touch")]
-            AttachType::Swipe(SwipeDirection::Up) => 1u16.into(),
-            #[cfg(feature = "touch")]
-            AttachType::Swipe(SwipeDirection::Down) => 2u16.into(),
-            #[cfg(feature = "touch")]
-            AttachType::Swipe(SwipeDirection::Left) => 3u16.into(),
-            #[cfg(feature = "touch")]
-            AttachType::Swipe(SwipeDirection::Right) => 4u16.into(),
+            Self::Swipe(dir) => dir.to_u8().into(),
         }
     }
-}
-
-impl From<Obj> for AttachType {
-    fn from(value: Obj) -> Self {
-        let raw: u16 = value.try_into().unwrap_or(0u16);
-        match raw {
-            #[cfg(feature = "touch")]
-            1 => AttachType::Swipe(SwipeDirection::Up),
-            #[cfg(feature = "touch")]
-            2 => AttachType::Swipe(SwipeDirection::Down),
-            #[cfg(feature = "touch")]
-            3 => AttachType::Swipe(SwipeDirection::Left),
-            #[cfg(feature = "touch")]
-            4 => AttachType::Swipe(SwipeDirection::Right),
-            _ => AttachType::Initial,
+    fn try_from_obj(obj: Obj) -> Result<Self, Error> {
+        if obj == Obj::const_none() {
+            return Ok(Self::Initial);
         }
+        #[cfg(feature = "touch")]
+        {
+            let dir: u8 = obj.try_into()?;
+            return Ok(AttachType::Swipe(
+                SwipeDirection::from_u8(dir).ok_or(Error::TypeError)?,
+            ));
+        }
+        #[allow(unreachable_code)]
+        Err(Error::TypeError)
     }
 }
 
@@ -149,7 +141,7 @@ where
 
     fn obj_get_transition_out(&self) -> Result<Obj, Error> {
         if let Some(msg) = self.get_transition_out() {
-            Ok(msg.into())
+            Ok(msg.to_obj())
         } else {
             Ok(Obj::const_none())
         }
@@ -434,7 +426,7 @@ extern "C" fn ui_layout_attach_timer_fn(this: Obj, timer_fn: Obj, attach_type: O
         let this: Gc<LayoutObj> = this.try_into()?;
         this.obj_set_timer_fn(timer_fn);
 
-        let msg = this.obj_event(Event::Attach(attach_type.into()))?;
+        let msg = this.obj_event(Event::Attach(AttachType::try_from_obj(attach_type)?))?;
         assert!(msg == Obj::const_none());
         Ok(Obj::const_none())
     };

@@ -6,12 +6,7 @@ from trezor.enums import ButtonRequestType
 from trezor.messages import ButtonAck, ButtonRequest
 from trezor.wire import ActionCancelled, context
 
-from ..common import (
-    button_request,
-    get_last_transition_out,
-    interact,
-    set_last_transition_out,
-)
+from ..common import button_request, interact
 
 if TYPE_CHECKING:
     from typing import Any, Awaitable, Iterable, NoReturn, Sequence, TypeVar
@@ -47,7 +42,7 @@ class RustLayout(LayoutParentType[T]):
         self.br_chan = loop.chan()
         self.layout = layout
         self.timer = loop.Timer()
-        self.layout.attach_timer_fn(self.set_timer, get_last_transition_out())
+        self.layout.attach_timer_fn(self.set_timer, None)
         self._send_button_request()
         self.backlight_level = ui.BacklightLevels.NORMAL
 
@@ -270,9 +265,6 @@ class RustLayout(LayoutParentType[T]):
         if res is not None:
             br_code, br_type = res
             self.br_chan.publish((br_code, br_type, self.layout.page_count()))
-
-    def finalize(self):
-        set_last_transition_out(self.layout.get_transition_out())
 
 
 def draw_simple(layout: trezorui2.LayoutObj[Any]) -> None:

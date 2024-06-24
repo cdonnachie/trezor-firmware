@@ -9,7 +9,7 @@ from trezorui2 import BacklightLevels
 if TYPE_CHECKING:
     from typing import Generic, TypeVar
 
-    from trezorui2 import UiResult  # noqa: F401
+    from trezorui2 import AttachType, UiResult  # noqa: F401
 
     T = TypeVar("T")
 
@@ -33,6 +33,9 @@ layout_chan = loop.chan()
 
 # allow only one alert at a time to avoid alerts overlapping
 _alert_in_progress = False
+
+# storing last transition type, so that next layout can continue nicely
+LAST_TRANSITION_OUT: AttachType | None = None
 
 # in debug mode, display an indicator in top right corner
 if __debug__:

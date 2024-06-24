@@ -5,7 +5,7 @@ T = TypeVar("T")
 
 # rust/src/ui/model_mercury/layout.rs
 class AttachType:
-    pass
+    ...
 
 
 # rust/src/ui/model_mercury/layout.rs
@@ -1091,7 +1091,7 @@ T = TypeVar("T")
 
 # rust/src/ui/model_tt/layout.rs
 class AttachType:
-    pass
+    ...
 
 
 # rust/src/ui/model_tt/layout.rs
