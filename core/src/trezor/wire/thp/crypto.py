@@ -100,7 +100,6 @@ class Handshake:
         # 6
         mask = _hash_of_two(trezor_static_pubkey, trezor_ephemeral_pubkey)
         # 7
-        print("key len:", len(trezor_static_pubkey))
         trezor_masked_static_pubkey = curve25519.multiply(mask, trezor_static_pubkey)
         # 8
         aes_ctx = aesgcm(self.k, IV_1)
@@ -139,13 +138,10 @@ class Handshake:
         aes_ctx.decrypt_in_place(
             memoryview(encrypted_host_static_pubkey)[:PUBKEY_LENGTH]
         )
-        print("decrypted hs pubkey: ", hexlify(encrypted_host_static_pubkey))
         host_static_pubkey = memoryview(encrypted_host_static_pubkey)[:PUBKEY_LENGTH]
         tag = aes_ctx.finish()
         assert tag == encrypted_host_static_pubkey[-16:]
         # 3
-        print("host static pubkey:", hexlify(host_static_pubkey))
-        print("host key's len:", len(host_static_pubkey))
         self.ck, self.k = _hkdf(
             self.ck,
             curve25519.multiply(self.trezor_ephemeral_privkey, host_static_pubkey),
@@ -167,19 +163,13 @@ class Handshake:
         # 10 somewhere else
 
     def _derive_static_key_pair(self) -> tuple[bytes, bytes]:
-        node_int = HARDENED | int.from_bytes("\x00THP".encode("ascii"), "big")
-
+        node_int = HARDENED | int.from_bytes(b"\x00THP", "big")
         node = bip32.from_seed(device.get_device_secret(), "curve25519")
         node.derive(node_int)
 
         trezor_static_privkey = node.private_key()
         trezor_static_pubkey = node.public_key()[1:33]
-        print(
-            "trezor static privkey:", hexlify(trezor_static_privkey).decode()
-        )  # TODO remove after testing
-        print(
-            "trezor static pubkey: ", hexlify(trezor_static_pubkey).decode()
-        )  # TODO remove after testing
+        # Note: the first byte \x01 of the public key is removed
 
         return trezor_static_privkey, trezor_static_pubkey
 
