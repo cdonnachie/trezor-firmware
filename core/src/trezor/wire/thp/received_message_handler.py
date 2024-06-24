@@ -270,7 +270,7 @@ async def _handle_state_TH2(ctx: Channel, message_length: int, ctrl_byte: int) -
             utils.get_bytes_as_str(handshake_completion_request_noise_payload),
         )
 
-    # key is decoded in handshake._handle_thp2_crypto
+    # key is decoded in handshake._handle_th2_crypto
     host_static_pubkey = host_encrypted_static_pubkey[:PUBKEY_LENGTH]
 
     paired: bool = False
