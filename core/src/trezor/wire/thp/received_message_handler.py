@@ -229,7 +229,7 @@ async def _handle_state_TH2(ctx: Channel, message_length: int, ctrl_byte: int) -
         INIT_DATA_OFFSET + KEY_LENGTH + TAG_LENGTH : message_length - CHECKSUM_LENGTH
     ]
 
-    ctx.handshake._handle_thp2_crypto(
+    ctx.handshake._handle_th2_crypto(
         host_encrypted_static_pubkey, handshake_completion_request_noise_payload
     )
 
