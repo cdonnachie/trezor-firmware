@@ -17,6 +17,8 @@ def enc(buffer: utils.BufferType, key: bytes, nonce: int, auth_data: bytes) -> b
     Encrypts the provided `buffer` with AES-GCM (in place).
     Returns a 16-byte long encryption tag.
     """
+    print("ENCRYPT-------------> used key:  ", key)
+    print("ENCRYPT-------------> used nonce:", nonce)
     iv = _get_iv_from_nonce(nonce)
     aes_ctx = aesgcm(key, iv)
     aes_ctx.auth(auth_data)
@@ -32,6 +34,8 @@ def dec(
     the tag computed in decryption, otherwise it returns `False`.
     """
     iv = _get_iv_from_nonce(nonce)
+    print("DECRYPT-------------> used key:  ", key)
+    print("DECRYPT-------------> used nonce:", nonce)
     aes_ctx = aesgcm(key, iv)
     aes_ctx.auth(auth_data)
     aes_ctx.decrypt_in_place(buffer)
@@ -95,6 +99,8 @@ class Handshake:
         trezor_masked_static_pubkey = curve25519.multiply(mask, trezor_static_pubkey)
         aes_ctx = aesgcm(self.k, IV_1)
         encrypted_trezor_static_pubkey = aes_ctx.encrypt(trezor_masked_static_pubkey)
+        print("TH1-ENCRYPT---------> used key:  ", self.k)
+        print("TH1-ENCRYPT---------> used nonce:", 0)
         aes_ctx.auth(self.h)
         tag_to_encrypted_key = aes_ctx.finish()
         encrypted_trezor_static_pubkey = (
@@ -125,6 +131,8 @@ class Handshake:
         aes_ctx.decrypt_in_place(
             memoryview(encrypted_host_static_pubkey)[:PUBKEY_LENGTH]
         )
+        print("TH2-DECRYPT---------> used key:  ", self.k)
+        print("TH2-DECRYPT---------> used nonce:", 1)
         host_static_pubkey = memoryview(encrypted_host_static_pubkey)[:PUBKEY_LENGTH]
         tag = aes_ctx.finish()
         assert tag == encrypted_host_static_pubkey[-16:]
@@ -136,6 +144,8 @@ class Handshake:
         aes_ctx = aesgcm(self.k, IV_1)
         aes_ctx.auth(self.h)
         aes_ctx.decrypt_in_place(memoryview(encrypted_payload)[:-16])
+        print("TH2-DECRYPT---------> used key:  ", self.k)
+        print("TH2-DECRYPT---------> used nonce:", 0)
         tag = aes_ctx.finish()
         assert tag == encrypted_payload[-16:]
 
