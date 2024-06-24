@@ -153,6 +153,8 @@ class Handshake:
 
         self.h = _hash_of_two(self.h, memoryview(encrypted_payload)[:-16])
         self.key_receive, self.key_send = _hkdf(self.ck, b"")
+        print("TREZOR_KEY_RECEIVE:", hexlify(self.key_receive))
+        print("TREZOR_KEY_SEND:   ", hexlify(self.key_send))
 
 
 def _derive_static_key_pair() -> tuple[bytes, bytes]:
