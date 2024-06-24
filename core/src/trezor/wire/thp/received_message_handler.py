@@ -196,11 +196,19 @@ async def _handle_state_TH1(
             thp_messages.get_encoded_device_properties(), host_ephemeral_pubkey
         )
     )
-    print("trezor ephemeral pubkey:", hexlify(trezor_ephemeral_pubkey).decode())
-    print(
-        "trezor masked static pubkey:", hexlify(encrypted_trezor_static_pubkey).decode()
-    )
-    print("tag:", hexlify(tag))
+
+    if __debug__:
+        log.debug(
+            __name__,
+            "trezor ephemeral pubkey: %s",
+            hexlify(trezor_ephemeral_pubkey).decode(),
+        )
+        log.debug(
+            __name__,
+            "trezor masked static pubkey: %s",
+            hexlify(encrypted_trezor_static_pubkey).decode(),
+        )
+        log.debug(__name__, "tag: %s", hexlify(tag))
     # TODO remove prints above after testing with Szymon
 
     payload = trezor_ephemeral_pubkey + encrypted_trezor_static_pubkey + tag
