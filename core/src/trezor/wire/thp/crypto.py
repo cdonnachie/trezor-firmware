@@ -169,7 +169,8 @@ class Handshake:
 
         trezor_static_privkey = node.private_key()
         trezor_static_pubkey = node.public_key()[1:33]
-        # Note: the first byte \x01 of the public key is removed
+        # Note: the first byte (\x01) of the public key is removed, as it
+        # only indicates the type of used elliptic curve
 
         return trezor_static_privkey, trezor_static_pubkey
 
