@@ -127,17 +127,18 @@ class Handshake:
         encrypted_payload: utils.BufferType,
     ):
 
-        # 1
+        # 1a
         aes_ctx = aesgcm(self.k, IV_2)
+        aes_ctx.auth(self.h)
+        # 2
+        self.h = _hash_of_two(self.h, encrypted_host_static_pubkey)
+        # 1b
         aes_ctx.decrypt_in_place(
             memoryview(encrypted_host_static_pubkey)[:PUBKEY_LENGTH]
         )
         host_static_pubkey = memoryview(encrypted_host_static_pubkey)[:PUBKEY_LENGTH]
-        aes_ctx.auth(self.h)
         tag = aes_ctx.finish()
         assert tag == encrypted_host_static_pubkey[-16:]
-        # 2
-        self.h = _hash_of_two(self.h, encrypted_host_static_pubkey)
         # 3
         print("host static pubkey:", hexlify(host_static_pubkey))
         print("host key's len:", len(host_static_pubkey))
