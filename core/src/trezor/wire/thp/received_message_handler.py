@@ -119,9 +119,6 @@ def _check_checksum(message_length: int, message_buffer: utils.BufferType):
         raise ThpError("Invalid checksum, ignoring message.")
 
 
-# TEST THIS
-
-
 async def _handle_ack(ctx: Channel, ack_bit: int):
     if not ABP.is_ack_valid(ctx.channel_cache, ack_bit):
         return
