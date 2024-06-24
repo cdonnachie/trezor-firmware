@@ -120,14 +120,19 @@ class Channel:
     async def _handle_init_packet(self, packet: utils.BufferType) -> None:
         if __debug__:
             log.debug(__name__, "handle_init_packet")
-        ctrl_byte, _, payload_length = ustruct.unpack(">BHH", packet)
+        # ctrl_byte, _, payload_length = ustruct.unpack(">BHH", packet) # TODO use this with single packet decryption
+        _, _, payload_length = ustruct.unpack(">BHH", packet)
         self.expected_payload_length = payload_length
         packet_payload = memoryview(packet)[INIT_DATA_OFFSET:]
 
         # If the channel does not "own" the buffer lock, decrypt first packet
         # TODO do it only when needed!
-        if control_byte.is_encrypted_transport(ctrl_byte):
-            packet_payload = self._decrypt_single_packet_payload(packet_payload)
+        # TODO FIX: If "_decrypt_single_packet_payload" is implemented, it will (possibly) break "decrypt_buffer" and nonces incrementation.
+        # On the other hand, without the single packet decryption, the "advanced" buffer selection cannot be implemented
+        # in "memory_manager.select_buffer", because the session id is unknown (encrypted).
+
+        # if control_byte.is_encrypted_transport(ctrl_byte):
+        #   packet_payload = self._decrypt_single_packet_payload(packet_payload)
 
         self.buffer = memory_manager.select_buffer(
             self.get_channel_state(),
@@ -180,9 +185,12 @@ class Channel:
             is_tag_valid = crypto.dec(
                 noise_buffer, tag, key_receive, nonce_receive, auth_data
             )
+            self.channel_cache.set_int(CHANNEL_NONCE_RECEIVE, nonce_receive + 1)
+
         if __debug__:
             log.debug(__name__, "Is decrypted tag valid? %s", str(is_tag_valid))
             log.debug(__name__, "Received tag: %s", (hexlify(tag).decode()))
+            log.debug(__name__, "New nonce_receive: %i", nonce_receive + 1)
 
     def _encrypt(self, buffer: utils.BufferType, noise_payload_len: int) -> None:
         if __debug__:
@@ -203,6 +211,10 @@ class Channel:
             assert auth_data is not None
 
             tag = crypto.enc(noise_buffer, key_send, nonce_send, auth_data)
+
+            self.channel_cache.set_int(CHANNEL_NONCE_SEND, nonce_send + 1)
+            if __debug__:
+                log.debug(__name__, "New nonce_send: %i", nonce_send + 1)
 
         buffer[noise_payload_len : noise_payload_len + TAG_LENGTH] = tag
 
