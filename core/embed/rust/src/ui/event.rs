@@ -51,8 +51,8 @@ pub enum TouchEvent {
     TouchMove(Point),
     /// Touch has ended at a point on the screen.
     TouchEnd(Point),
-    /// Touch has been aborted.
-    TouchAbort(),
+    /// Touch event has been suppressed by more important event - i.e. Swipe.
+    TouchAbort,
 }
 
 impl TouchEvent {

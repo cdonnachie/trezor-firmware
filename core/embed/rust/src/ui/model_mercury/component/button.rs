@@ -390,7 +390,7 @@ impl Component for Button {
                     }
                 }
             }
-            Event::Touch(TouchEvent::TouchAbort()) => {
+            Event::Touch(TouchEvent::TouchAbort) => {
                 match self.state {
                     State::Initial | State::Disabled => {
                         // Do nothing.
