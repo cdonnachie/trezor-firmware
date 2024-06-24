@@ -11,9 +11,6 @@ PUBKEY_LENGTH = const(32)
 if utils.DISABLE_ENCRYPTION:
     DUMMY_TAG = b"\xA0\xA1\xA2\xA3\xA4\xA5\xA6\xA7\xA8\xA9\xB0\xB1\xB2\xB3\xB4\xB5"
 
-if __debug__:
-    from ubinascii import hexlify
-
 
 def enc(buffer: utils.BufferType, key: bytes, nonce: int, auth_data: bytes) -> bytes:
     """
@@ -27,7 +24,6 @@ def enc(buffer: utils.BufferType, key: bytes, nonce: int, auth_data: bytes) -> b
     return aes_ctx.finish()
 
 
-# @codescene(disable: "Excess Number of Function Arguments") # TODO remove before prod
 def dec(
     buffer: utils.BufferType, tag: bytes, key: bytes, nonce: int, auth_data: bytes
 ) -> bool:
@@ -63,6 +59,13 @@ IV_2 = b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01"
 
 
 class Handshake:
+    """
+    `Handshake` holds (temporary) values and keys that are used during the creation of an encrypted channel.
+    The following values should be saved for future use before disposing of this object:
+    - `h` (handshake hash, can be used to bind other values to the channel)
+    - `key_receive` (key for decrypting incoming communication)
+    - `key_send` (key for encrypting outgoing communication)
+    """
 
     def __init__(self) -> None:
         self.trezor_ephemeral_privkey: bytes
@@ -78,7 +81,7 @@ class Handshake:
         host_ephemeral_pubkey: bytes,
     ) -> tuple[bytes, bytes, bytes]:
 
-        trezor_static_privkey, trezor_static_pubkey = self._derive_static_key_pair()
+        trezor_static_privkey, trezor_static_pubkey = _derive_static_key_pair()
         if __debug__:
             trezor_static_privkey = b"\x67\x0c\x63\x18\x7b\x4d\x55\x6d\xf6\x06\xed\xce\x0f\x91\xad\xda\x09\xfb\x43\xc4\x99\x8c\x30\x97\xa8\x90\x80\xbe\x09\x05\xa7\x27"
             trezor_static_pubkey = b"\xcc\xbf\x52\x9f\xc8\xdd\x46\x62\xd4\xd1\xd1\xfa\x66\x36\x8b\x87\x58\xc0\xb6\x67\x3a\x1b\xb9\xd5\x32\xd9\x5c\xa6\x07\xcb\xf7\x29"
@@ -92,7 +95,7 @@ class Handshake:
         # 4
         self.h = _hash_of_two(self.h, trezor_ephemeral_pubkey)
 
-        # 5 - TODO rename `point`
+        # 5
         point = curve25519.multiply(
             self.trezor_ephemeral_privkey, host_ephemeral_pubkey
         )
@@ -111,7 +114,7 @@ class Handshake:
         )
         # 9
         self.h = _hash_of_two(self.h, encrypted_trezor_static_pubkey)
-        # 10 - TODO rename `point`
+        # 10
         point = curve25519.multiply(trezor_static_privkey, host_ephemeral_pubkey)
         self.ck, self.k = _hkdf(self.ck, curve25519.multiply(mask, point))
         # 11
@@ -162,17 +165,18 @@ class Handshake:
 
         # 10 somewhere else
 
-    def _derive_static_key_pair(self) -> tuple[bytes, bytes]:
-        node_int = HARDENED | int.from_bytes(b"\x00THP", "big")
-        node = bip32.from_seed(device.get_device_secret(), "curve25519")
-        node.derive(node_int)
 
-        trezor_static_privkey = node.private_key()
-        trezor_static_pubkey = node.public_key()[1:33]
-        # Note: the first byte (\x01) of the public key is removed, as it
-        # only indicates the type of used elliptic curve
+def _derive_static_key_pair() -> tuple[bytes, bytes]:
+    node_int = HARDENED | int.from_bytes(b"\x00THP", "big")
+    node = bip32.from_seed(device.get_device_secret(), "curve25519")
+    node.derive(node_int)
 
-        return trezor_static_privkey, trezor_static_pubkey
+    trezor_static_privkey = node.private_key()
+    trezor_static_pubkey = node.public_key()[1:33]
+    # Note: the first byte (\x01) of the public key is removed, as it
+    # only indicates the type of used elliptic curve
+
+    return trezor_static_privkey, trezor_static_pubkey
 
 
 def _hkdf(chaining_key, input: bytes):
