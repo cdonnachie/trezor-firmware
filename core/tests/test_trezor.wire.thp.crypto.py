@@ -1,14 +1,21 @@
 from common import *
+import storage
 from trezor import utils
+from trezor.wire.thp.crypto import IV_1, IV_2, Handshake
+from trezorcrypto import aesgcm, curve25519
 
 if utils.USE_THP:
     from trezor.wire.thp import crypto
 
 
+def get_dummy_device_secret():
+    return b"\x01\x02\x03\x04\x05\x06\x07\x08\x01\x02\x03\x04\x05\x06\x07\x08"
+
+
 @unittest.skipUnless(utils.USE_THP, "only needed for THP")
 class TestTrezorHostProtocolCrypto(unittest.TestCase):
     key_1 = b"\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07\x00\x01\x02\x03\x04\x05\x06\x07"
-
+    handshake = Handshake()
     # 0:key, 1:nonce, 2:auth_data, 3:plaintext, 4:expected_ciphertext, 5:expected_tag
     vectors_enc = [
         (
@@ -98,6 +105,45 @@ class TestTrezorHostProtocolCrypto(unittest.TestCase):
 
     def test_incorrect_vectors(self):
         pass
+
+    def test_th1_crypto(self):
+        storage.device.get_device_secret = get_dummy_device_secret
+        handshake = self.handshake
+
+        host_ephemeral_privkey = curve25519.generate_secret()
+        host_ephemeral_pubkey = curve25519.publickey(host_ephemeral_privkey)
+        handshake._handle_th1_crypto(b"", host_ephemeral_pubkey)
+
+    def test_th2_crypto(self):
+        handshake = self.handshake
+
+        host_static_privkey = curve25519.generate_secret()
+        host_static_pubkey = curve25519.publickey(host_static_privkey)
+        aes_ctx = aesgcm(handshake.k, IV_2)
+        aes_ctx.auth(handshake.h)
+        encrypted_host_static_pubkey = bytearray(
+            aes_ctx.encrypt(host_static_pubkey) + aes_ctx.finish()
+        )
+
+        # Code to encrypt Host's noise encrypted payload correctly:
+        protomsg = bytearray(b"\x10\x02\x10\x03")
+        temp_k = handshake.k
+        temp_h = handshake.h
+
+        temp_h = crypto._hash_of_two(temp_h, encrypted_host_static_pubkey)
+        _, temp_k = crypto._hkdf(
+            handshake.ck,
+            curve25519.multiply(handshake.trezor_ephemeral_privkey, host_static_pubkey),
+        )
+        aes_ctx = aesgcm(temp_k, IV_1)
+        aes_ctx.encrypt_in_place(protomsg)
+        aes_ctx.auth(temp_h)
+        tag = aes_ctx.finish()
+        encrypted_payload = bytearray(protomsg + tag)
+        # end of encrypted payload generation
+
+        handshake._handle_th2_crypto(encrypted_host_static_pubkey, encrypted_payload)
+        self.assertEqual(encrypted_payload[:4], b"\x10\x02\x10\x03")
 
 
 if __name__ == "__main__":
