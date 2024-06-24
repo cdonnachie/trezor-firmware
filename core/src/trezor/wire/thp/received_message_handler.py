@@ -260,7 +260,8 @@ async def _handle_state_TH2(ctx: Channel, message_length: int, ctrl_byte: int) -
     if TYPE_CHECKING:
         assert ThpHandshakeCompletionReqNoisePayload.is_type_of(noise_payload)
     for i in noise_payload.pairing_methods:
-        ctx.selected_pairing_methods.append(i)
+        if i not in ctx.selected_pairing_methods:
+            ctx.selected_pairing_methods.append(i)
     if __debug__:
         log.debug(
             __name__,
