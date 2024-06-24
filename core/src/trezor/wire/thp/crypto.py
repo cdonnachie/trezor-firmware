@@ -82,26 +82,17 @@ class Handshake:
     ) -> tuple[bytes, bytes, bytes]:
 
         trezor_static_privkey, trezor_static_pubkey = _derive_static_key_pair()
-        # 1
         self.trezor_ephemeral_privkey = curve25519.generate_secret()
         trezor_ephemeral_pubkey = curve25519.publickey(self.trezor_ephemeral_privkey)
-        # 2
         self.h = _hash_of_two(PROTOCOL_NAME, device_properties)
-        # 3
         self.h = _hash_of_two(self.h, host_ephemeral_pubkey)
-        # 4
         self.h = _hash_of_two(self.h, trezor_ephemeral_pubkey)
-
-        # 5
         point = curve25519.multiply(
             self.trezor_ephemeral_privkey, host_ephemeral_pubkey
         )
         self.ck, self.k = _hkdf(PROTOCOL_NAME, point)
-        # 6
         mask = _hash_of_two(trezor_static_pubkey, trezor_ephemeral_pubkey)
-        # 7
         trezor_masked_static_pubkey = curve25519.multiply(mask, trezor_static_pubkey)
-        # 8
         aes_ctx = aesgcm(self.k, IV_1)
         encrypted_trezor_static_pubkey = aes_ctx.encrypt(trezor_masked_static_pubkey)
         aes_ctx.auth(self.h)
@@ -109,18 +100,13 @@ class Handshake:
         encrypted_trezor_static_pubkey = (
             encrypted_trezor_static_pubkey + tag_to_encrypted_key
         )
-        # 9
         self.h = _hash_of_two(self.h, encrypted_trezor_static_pubkey)
-        # 10
         point = curve25519.multiply(trezor_static_privkey, host_ephemeral_pubkey)
         self.ck, self.k = _hkdf(self.ck, curve25519.multiply(mask, point))
-        # 11
         aes_ctx = aesgcm(self.k, IV_1)
         aes_ctx.auth(self.h)
         tag = aes_ctx.finish()
-        # 12
         self.h = _hash_of_two(self.h, tag)
-        # 13 -ish
         return (trezor_ephemeral_pubkey, encrypted_trezor_static_pubkey, tag)
 
     def _handle_th2_crypto(
@@ -129,38 +115,32 @@ class Handshake:
         encrypted_payload: utils.BufferType,
     ):
 
-        # 1a
         aes_ctx = aesgcm(self.k, IV_2)
-        aes_ctx.auth(self.h)
-        # 2
-        self.h = _hash_of_two(self.h, encrypted_host_static_pubkey)
-        # 1b
+
+        # The new value of hash `h` MUST be computed before the `encrypted_host_static_pubkey` is decrypted.
+        # However, decryption of `encrypted_host_static_pubkey` MUST use the previous value of `h` for
+        # authentication of the gcm tag.
+        aes_ctx.auth(self.h)  # Authenticate with the previous value of `h`
+        self.h = _hash_of_two(self.h, encrypted_host_static_pubkey)  # Compute new value
         aes_ctx.decrypt_in_place(
             memoryview(encrypted_host_static_pubkey)[:PUBKEY_LENGTH]
         )
         host_static_pubkey = memoryview(encrypted_host_static_pubkey)[:PUBKEY_LENGTH]
         tag = aes_ctx.finish()
         assert tag == encrypted_host_static_pubkey[-16:]
-        # 3
+
         self.ck, self.k = _hkdf(
             self.ck,
             curve25519.multiply(self.trezor_ephemeral_privkey, host_static_pubkey),
         )
-        # 4
         aes_ctx = aesgcm(self.k, IV_1)
         aes_ctx.auth(self.h)
         aes_ctx.decrypt_in_place(memoryview(encrypted_payload)[:-16])
         tag = aes_ctx.finish()
         assert tag == encrypted_payload[-16:]
 
-        # 5 and #6 somewhere else
-        # 7
         self.h = _hash_of_two(self.h, memoryview(encrypted_payload)[:-16])
-        # 8 somewhere else
-        # 9
         self.key_receive, self.key_send = _hkdf(self.ck, b"")
-
-        # 10 somewhere else
 
 
 def _derive_static_key_pair() -> tuple[bytes, bytes]:
@@ -171,7 +151,7 @@ def _derive_static_key_pair() -> tuple[bytes, bytes]:
     trezor_static_privkey = node.private_key()
     trezor_static_pubkey = node.public_key()[1:33]
     # Note: the first byte (\x01) of the public key is removed, as it
-    # only indicates the type of used elliptic curve
+    # only indicates the type of the elliptic curve used
 
     return trezor_static_privkey, trezor_static_pubkey
 
@@ -192,7 +172,5 @@ def _hash_of_two(part_1: bytes, part_2: bytes) -> bytes:
 
 
 def _get_iv_from_nonce(nonce: int) -> bytes:
-    utils.ensure(
-        nonce <= 0xFFFFFFFFFFFFFFFF, "Nonce overflow, terminate the channel"
-    )  # TODO change to different error?
+    utils.ensure(nonce <= 0xFFFFFFFFFFFFFFFF, "Nonce overflow, terminate the channel")
     return bytes(4) + nonce.to_bytes(8, "big")
