@@ -3,7 +3,7 @@ from ubinascii import hexlify
 
 from trezor import loop, protobuf
 from trezor.crypto.hashlib import sha256
-from trezor.enums import ButtonRequestType, MessageType, ThpPairingMethod
+from trezor.enums import MessageType, ThpPairingMethod
 from trezor.messages import (
     ThpCodeEntryChallenge,
     ThpCodeEntryCommitment,
@@ -18,11 +18,11 @@ from trezor.messages import (
     ThpEndResponse,
     ThpNfcUnidirectionalSecret,
     ThpNfcUnidirectionalTag,
+    ThpPairingPreparationsFinished,
     ThpQrCodeSecret,
     ThpQrCodeTag,
     ThpStartPairingRequest,
 )
-from trezor.ui.layouts.common import button_request
 from trezor.wire.errors import ActionCancelled, UnexpectedMessage
 from trezor.wire.thp import ChannelState, ThpError
 from trezor.wire.thp.pairing_context import PairingContext
@@ -91,6 +91,7 @@ async def handle_pairing_request(
     ctx.host_name = message.host_name or ""
 
     await _prepare_pairing(ctx)
+    await ctx.write(ThpPairingPreparationsFinished())
     ctx.channel_ctx.set_channel_state(ChannelState.TP3)
     response = await show_display_data(ctx, _get_possible_pairing_methods(ctx))
 
@@ -116,10 +117,6 @@ async def _prepare_pairing(ctx: PairingContext) -> None:
 
 
 async def show_display_data(ctx: PairingContext, expected_types: Container[int] = ()):
-    print("___DISPLAY QR CODE and CODE ENTRY - TEST___")
-    await button_request(
-        "show_pairing_methods", ButtonRequestType.Other, 1  # TODO change
-    )
 
     read_task = ctx.read(expected_types)
     cancel_task = ctx.display_data.get_display_layout()
