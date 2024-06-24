@@ -182,9 +182,12 @@ class Channel:
             assert nonce_receive is not None
             assert auth_data is not None
 
+            print("Buffer before decryption:", hexlify(noise_buffer))
             is_tag_valid = crypto.dec(
                 noise_buffer, tag, key_receive, nonce_receive, auth_data
             )
+            print("Buffer after decryption:", hexlify(noise_buffer))
+
             self.channel_cache.set_int(CHANNEL_NONCE_RECEIVE, nonce_receive + 1)
 
         if __debug__:

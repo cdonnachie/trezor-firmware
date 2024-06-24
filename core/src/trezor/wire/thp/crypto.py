@@ -11,13 +11,15 @@ PUBKEY_LENGTH = const(32)
 if utils.DISABLE_ENCRYPTION:
     DUMMY_TAG = b"\xA0\xA1\xA2\xA3\xA4\xA5\xA6\xA7\xA8\xA9\xB0\xB1\xB2\xB3\xB4\xB5"
 
+if __debug__:
+    from ubinascii import hexlify
 
 def enc(buffer: utils.BufferType, key: bytes, nonce: int, auth_data: bytes) -> bytes:
     """
     Encrypts the provided `buffer` with AES-GCM (in place).
     Returns a 16-byte long encryption tag.
     """
-    print("ENCRYPT-------------> used key:  ", key)
+    print("ENCRYPT-------------> used key:  ", hexlify(key))
     print("ENCRYPT-------------> used nonce:", nonce)
     iv = _get_iv_from_nonce(nonce)
     aes_ctx = aesgcm(key, iv)
@@ -34,7 +36,7 @@ def dec(
     the tag computed in decryption, otherwise it returns `False`.
     """
     iv = _get_iv_from_nonce(nonce)
-    print("DECRYPT-------------> used key:  ", key)
+    print("DECRYPT-------------> used key:  ", hexlify(key))
     print("DECRYPT-------------> used nonce:", nonce)
     aes_ctx = aesgcm(key, iv)
     aes_ctx.auth(auth_data)
@@ -99,7 +101,7 @@ class Handshake:
         trezor_masked_static_pubkey = curve25519.multiply(mask, trezor_static_pubkey)
         aes_ctx = aesgcm(self.k, IV_1)
         encrypted_trezor_static_pubkey = aes_ctx.encrypt(trezor_masked_static_pubkey)
-        print("TH1-ENCRYPT---------> used key:  ", self.k)
+        print("TH1-ENCRYPT---------> used key:  ", hexlify(self.k))
         print("TH1-ENCRYPT---------> used nonce:", 0)
         aes_ctx.auth(self.h)
         tag_to_encrypted_key = aes_ctx.finish()
@@ -131,7 +133,7 @@ class Handshake:
         aes_ctx.decrypt_in_place(
             memoryview(encrypted_host_static_pubkey)[:PUBKEY_LENGTH]
         )
-        print("TH2-DECRYPT---------> used key:  ", self.k)
+        print("TH2-DECRYPT---------> used key:  ", hexlify(self.k))
         print("TH2-DECRYPT---------> used nonce:", 1)
         host_static_pubkey = memoryview(encrypted_host_static_pubkey)[:PUBKEY_LENGTH]
         tag = aes_ctx.finish()
@@ -144,7 +146,7 @@ class Handshake:
         aes_ctx = aesgcm(self.k, IV_1)
         aes_ctx.auth(self.h)
         aes_ctx.decrypt_in_place(memoryview(encrypted_payload)[:-16])
-        print("TH2-DECRYPT---------> used key:  ", self.k)
+        print("TH2-DECRYPT---------> used key:  ", hexlify(self.k))
         print("TH2-DECRYPT---------> used nonce:", 0)
         tag = aes_ctx.finish()
         assert tag == encrypted_payload[-16:]
