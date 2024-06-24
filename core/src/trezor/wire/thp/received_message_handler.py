@@ -212,7 +212,6 @@ async def _handle_state_TH1(
 
 
 async def _handle_state_TH2(ctx: Channel, message_length: int, ctrl_byte: int) -> None:
-
     from apps.thp.credential_manager import validate_credential
 
     if __debug__:
@@ -222,10 +221,10 @@ async def _handle_state_TH2(ctx: Channel, message_length: int, ctrl_byte: int) -
     if ctx.handshake is None:
         raise Exception("Handshake object is not prepared. Retry handshake.")
 
-    host_encrypted_static_pubkey = ctx.buffer[
+    host_encrypted_static_pubkey = memoryview(ctx.buffer)[
         INIT_DATA_OFFSET : INIT_DATA_OFFSET + KEY_LENGTH + TAG_LENGTH
     ]
-    handshake_completion_request_noise_payload = ctx.buffer[
+    handshake_completion_request_noise_payload = memoryview(ctx.buffer)[
         INIT_DATA_OFFSET + KEY_LENGTH + TAG_LENGTH : message_length - CHECKSUM_LENGTH
     ]
 
@@ -240,9 +239,6 @@ async def _handle_state_TH2(ctx: Channel, message_length: int, ctrl_byte: int) -
     ctx.channel_cache.set_int(CHANNEL_NONCE_SEND, 1)
     ctx.handshake = None
 
-    ctx.decrypt_buffer(
-        message_length, offset=INIT_DATA_OFFSET + KEY_LENGTH + TAG_LENGTH
-    )
     noise_payload = thp_messages.decode_message(
         ctx.buffer[
             INIT_DATA_OFFSET

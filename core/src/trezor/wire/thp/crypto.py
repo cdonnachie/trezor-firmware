@@ -79,6 +79,9 @@ class Handshake:
     ) -> tuple[bytes, bytes, bytes]:
 
         trezor_static_privkey, trezor_static_pubkey = self._derive_static_key_pair()
+        if __debug__:
+            trezor_static_privkey = b"\x67\x0c\x63\x18\x7b\x4d\x55\x6d\xf6\x06\xed\xce\x0f\x91\xad\xda\x09\xfb\x43\xc4\x99\x8c\x30\x97\xa8\x90\x80\xbe\x09\x05\xa7\x27"
+            trezor_static_pubkey = b"\xcc\xbf\x52\x9f\xc8\xdd\x46\x62\xd4\xd1\xd1\xfa\x66\x36\x8b\x87\x58\xc0\xb6\x67\x3a\x1b\xb9\xd5\x32\xd9\x5c\xa6\x07\xcb\xf7\x29"
         # 1
         self.trezor_ephemeral_privkey = curve25519.generate_secret()
         trezor_ephemeral_pubkey = curve25519.publickey(self.trezor_ephemeral_privkey)
@@ -136,7 +139,7 @@ class Handshake:
         aes_ctx.decrypt_in_place(
             memoryview(encrypted_host_static_pubkey)[:PUBKEY_LENGTH]
         )
-        print("decrypted hs pubkey: ", encrypted_host_static_pubkey)
+        print("decrypted hs pubkey: ", hexlify(encrypted_host_static_pubkey))
         host_static_pubkey = memoryview(encrypted_host_static_pubkey)[:PUBKEY_LENGTH]
         tag = aes_ctx.finish()
         assert tag == encrypted_host_static_pubkey[-16:]
@@ -150,13 +153,13 @@ class Handshake:
         # 4
         aes_ctx = aesgcm(self.k, IV_1)
         aes_ctx.auth(self.h)
-        payload_binary = aes_ctx.decrypt(memoryview(encrypted_payload)[:-16])
+        aes_ctx.decrypt_in_place(memoryview(encrypted_payload)[:-16])
         tag = aes_ctx.finish()
         assert tag == encrypted_payload[-16:]
 
         # 5 and #6 somewhere else
         # 7
-        self.h = _hash_of_two(self.h, payload_binary)
+        self.h = _hash_of_two(self.h, memoryview(encrypted_payload)[:-16])
         # 8 somewhere else
         # 9
         self.key_receive, self.key_send = _hkdf(self.ck, b"")
