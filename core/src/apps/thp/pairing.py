@@ -24,7 +24,7 @@ from trezor.messages import (
     ThpStartPairingRequest,
 )
 from trezor.wire.errors import ActionCancelled, UnexpectedMessage
-from trezor.wire.thp import ChannelState, ThpError
+from trezor.wire.thp import ChannelState, ThpError, crypto
 from trezor.wire.thp.pairing_context import PairingContext
 
 from .credential_manager import issue_credential
@@ -309,13 +309,13 @@ async def _handle_credential_request(
     if message.host_static_pubkey is None:
         raise Exception("Invalid message")  # TODO change failure type
 
-    DUMMY_TREZOR_STATIC_PUBKEY = b"\x00"  # TODO
+    trezor_static_pubkey = crypto.get_trezor_static_pubkey()
     credential_metadata = ThpCredentialMetadata(host_name=ctx.host_name)
     credential = issue_credential(message.host_static_pubkey, credential_metadata)
 
     return await ctx.call_any(
         ThpCredentialResponse(
-            trezor_static_pubkey=DUMMY_TREZOR_STATIC_PUBKEY, credential=credential
+            trezor_static_pubkey=trezor_static_pubkey, credential=credential
         ),
         MessageType.ThpCredentialRequest,
         MessageType.ThpEndRequest,

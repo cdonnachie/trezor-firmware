@@ -14,6 +14,7 @@ if utils.DISABLE_ENCRYPTION:
 if __debug__:
     from ubinascii import hexlify
 
+
 def enc(buffer: utils.BufferType, key: bytes, nonce: int, auth_data: bytes) -> bytes:
     """
     Encrypts the provided `buffer` with AES-GCM (in place).
@@ -168,6 +169,11 @@ def _derive_static_key_pair() -> tuple[bytes, bytes]:
     # only indicates the type of the elliptic curve used
 
     return trezor_static_privkey, trezor_static_pubkey
+
+
+def get_trezor_static_pubkey() -> bytes:
+    _, pubkey = _derive_static_key_pair()
+    return pubkey
 
 
 def _hkdf(chaining_key, input: bytes):
