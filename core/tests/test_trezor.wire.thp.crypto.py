@@ -112,7 +112,7 @@ class TestTrezorHostProtocolCrypto(unittest.TestCase):
 
         host_ephemeral_privkey = curve25519.generate_secret()
         host_ephemeral_pubkey = curve25519.publickey(host_ephemeral_privkey)
-        handshake._handle_th1_crypto(b"", host_ephemeral_pubkey)
+        handshake.handle_th1_crypto(b"", host_ephemeral_pubkey)
 
     def test_th2_crypto(self):
         handshake = self.handshake
@@ -142,7 +142,7 @@ class TestTrezorHostProtocolCrypto(unittest.TestCase):
         encrypted_payload = bytearray(protomsg + tag)
         # end of encrypted payload generation
 
-        handshake._handle_th2_crypto(encrypted_host_static_pubkey, encrypted_payload)
+        handshake.handle_th2_crypto(encrypted_host_static_pubkey, encrypted_payload)
         self.assertEqual(encrypted_payload[:4], b"\x10\x02\x10\x03")
 
 

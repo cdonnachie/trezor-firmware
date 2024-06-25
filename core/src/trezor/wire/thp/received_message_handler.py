@@ -189,7 +189,7 @@ async def _handle_state_TH1(
         ctx.buffer[INIT_DATA_OFFSET : message_length - CHECKSUM_LENGTH]
     )
     trezor_ephemeral_pubkey, encrypted_trezor_static_pubkey, tag = (
-        ctx.handshake._handle_th1_crypto(
+        ctx.handshake.handle_th1_crypto(
             thp_messages.get_encoded_device_properties(), host_ephemeral_pubkey
         )
     )
@@ -232,7 +232,7 @@ async def _handle_state_TH2(ctx: Channel, message_length: int, ctrl_byte: int) -
         INIT_DATA_OFFSET + KEY_LENGTH + TAG_LENGTH : message_length - CHECKSUM_LENGTH
     ]
 
-    ctx.handshake._handle_th2_crypto(
+    ctx.handshake.handle_th2_crypto(
         host_encrypted_static_pubkey, handshake_completion_request_noise_payload
     )
 
@@ -245,7 +245,6 @@ async def _handle_state_TH2(ctx: Channel, message_length: int, ctrl_byte: int) -
     ctx.channel_cache.set_int(
         CHANNEL_NONCE_SEND, 1
     )  # TODO check nonce default settings
-    ctx.handshake = None
 
     noise_payload = thp_messages.decode_message(
         ctx.buffer[
@@ -287,11 +286,17 @@ async def _handle_state_TH2(ctx: Channel, message_length: int, ctrl_byte: int) -
                 log.exception(__name__, e)
             pass
 
+    trezor_state = thp_messages.TREZOR_STATE_UNPAIRED
+    if paired:
+        trezor_state = thp_messages.TREZOR_STATE_PAIRED
     # send hanshake completion response
     await ctx.write_handshake_message(
         HANDSHAKE_COMP_RES,
-        thp_messages.get_handshake_completion_response(paired),
+        ctx.handshake.get_handshake_completion_response(trezor_state),
     )
+
+    ctx.handshake = None
+
     if paired:
         ctx.set_channel_state(ChannelState.ENCRYPTED_TRANSPORT)
     else:

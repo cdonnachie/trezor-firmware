@@ -82,7 +82,7 @@ class Handshake:
         self.key_receive: bytes
         self.key_send: bytes
 
-    def _handle_th1_crypto(
+    def handle_th1_crypto(
         self,
         device_properties: bytes,
         host_ephemeral_pubkey: bytes,
@@ -118,7 +118,7 @@ class Handshake:
         self.h = _hash_of_two(self.h, tag)
         return (trezor_ephemeral_pubkey, encrypted_trezor_static_pubkey, tag)
 
-    def _handle_th2_crypto(
+    def handle_th2_crypto(
         self,
         encrypted_host_static_pubkey: utils.BufferType,
         encrypted_payload: utils.BufferType,
@@ -156,6 +156,12 @@ class Handshake:
         self.key_receive, self.key_send = _hkdf(self.ck, b"")
         print("TREZOR_KEY_RECEIVE:", hexlify(self.key_receive))
         print("TREZOR_KEY_SEND:   ", hexlify(self.key_send))
+
+    def get_handshake_completion_response(self, trezor_state: bytes) -> bytes:
+        aes_ctx = aesgcm(self.key_send, IV_1)
+        encrypted_trezor_state = aes_ctx.encrypt(trezor_state)
+        tag = aes_ctx.finish()
+        return encrypted_trezor_state + tag
 
 
 def _derive_static_key_pair() -> tuple[bytes, bytes]:
