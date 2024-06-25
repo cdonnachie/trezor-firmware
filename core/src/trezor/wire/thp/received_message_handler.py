@@ -239,8 +239,12 @@ async def _handle_state_TH2(ctx: Channel, message_length: int, ctrl_byte: int) -
     ctx.channel_cache.set(CHANNEL_KEY_RECEIVE, ctx.handshake.key_receive)
     ctx.channel_cache.set(CHANNEL_KEY_SEND, ctx.handshake.key_send)
     ctx.channel_cache.set(CHANNEL_HANDSHAKE_HASH, ctx.handshake.h)
-    ctx.channel_cache.set_int(CHANNEL_NONCE_RECEIVE, 0)
-    ctx.channel_cache.set_int(CHANNEL_NONCE_SEND, 1)
+    ctx.channel_cache.set_int(
+        CHANNEL_NONCE_RECEIVE, 1
+    )  # TODO check nonce default settings
+    ctx.channel_cache.set_int(
+        CHANNEL_NONCE_SEND, 1
+    )  # TODO check nonce default settings
     ctx.handshake = None
 
     noise_payload = thp_messages.decode_message(
