@@ -38,7 +38,7 @@ use crate::ui::event::USBEvent;
 use crate::ui::{component::SwipeDirection, event::TouchEvent};
 
 impl AttachType {
-    fn to_obj(&self) -> Obj {
+    fn to_obj(self) -> Obj {
         match self {
             Self::Initial => Obj::const_none(),
             #[cfg(feature = "touch")]
