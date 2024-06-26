@@ -234,6 +234,7 @@
   "T2T1": {
     "supported": {
       "bitcoin:ACM": "2.0.10",
+      "bitcoin:AVN": "2.1.7",
       "bitcoin:AXE": "2.0.11",
       "bitcoin:BCH": "2.0.7",
       "bitcoin:BTC": "2.0.5",
