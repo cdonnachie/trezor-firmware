@@ -183,35 +183,6 @@ def by_name(name: str) -> CoinInfo:
                 None,  # confidential_assets
             )
         if not utils.BITCOIN_ONLY:
-            if name == "Avian":
-                return CoinInfo(
-                    name,  # coin_name
-                    "AVN",  # coin_shortcut
-                    8,  # decimals
-                    60,  # address_type
-                    122,  # address_type_p2sh
-                    170000000000,  # maxfee_kb
-                    "Raven Signed Message:\n",  # signed_message_header
-                    0x0488b21e,  # xpub_magic
-                    None,  # xpub_magic_segwit_p2sh
-                    None,  # xpub_magic_segwit_native
-                    None,  # xpub_magic_multisig_segwit_p2sh
-                    None,  # xpub_magic_multisig_segwit_native
-                    None,  # bech32_prefix
-                    None,  # cashaddr_prefix
-                    921,  # slip44
-                    False,  # segwit
-                    False,  # taproot
-                    64,     # fork_id
-                    False,  # force_bip143
-                    False,  # decred
-                    False,  # negative_fee
-                    'secp256k1',  # curve_name
-                    False,  # extra_data
-                    False,  # timestamp
-                    False,  # overwintered
-                    None,  # confidential_assets
-                )
             if name == "Actinium":
                 return CoinInfo(
                     name,  # coin_name
@@ -1549,35 +1520,6 @@ def by_name(name: str) -> CoinInfo:
                     False,  # overwintered
                     None,  # confidential_assets
                 )
-            if name == "Avian":
-                return CoinInfo(
-                    name,  # coin_name
-                    "AVN",  # coin_shortcut
-                    8,  # decimals
-                    60,  # address_type
-                    122,  # address_type_p2sh
-                    170000000000,  # maxfee_kb
-                    "Raven Signed Message:\n",  # signed_message_header
-                    0x0488b21e,  # xpub_magic
-                    None,  # xpub_magic_segwit_p2sh
-                    None,  # xpub_magic_segwit_native
-                    None,  # xpub_magic_multisig_segwit_p2sh
-                    None,  # xpub_magic_multisig_segwit_native
-                    None,  # bech32_prefix
-                    None,  # cashaddr_prefix
-                    921,   # slip44
-                    False,  # segwit
-                    False,  # taproot
-                    64,     # fork_id
-                    False,  # force_bip143
-                    False,  # decred
-                    False,  # negative_fee
-                    'secp256k1',  # curve_name
-                    False,  # extra_data
-                    False,  # timestamp
-                    False,  # overwintered
-                    None,  # confidential_assets
-                )
             if name == "Axe":
                 return CoinInfo(
                     name,  # coin_name
@@ -2877,35 +2819,6 @@ def by_name(name: str) -> CoinInfo:
                     True,  # segwit
                     False,  # taproot
                     None,  # fork_id
-                    False,  # force_bip143
-                    False,  # decred
-                    False,  # negative_fee
-                    'secp256k1',  # curve_name
-                    False,  # extra_data
-                    False,  # timestamp
-                    False,  # overwintered
-                    None,  # confidential_assets
-                )
-            if name == "Avian":
-                return CoinInfo(
-                    name,  # coin_name
-                    "AVN",  # coin_shortcut
-                    8,  # decimals
-                    60,  # address_type
-                    122,  # address_type_p2sh
-                    170000000000,  # maxfee_kb
-                    "Raven Signed Message:\n",  # signed_message_header
-                    0x0488b21e,  # xpub_magic
-                    None,  # xpub_magic_segwit_p2sh
-                    None,  # xpub_magic_segwit_native
-                    None,  # xpub_magic_multisig_segwit_p2sh
-                    None,  # xpub_magic_multisig_segwit_native
-                    None,  # bech32_prefix
-                    None,  # cashaddr_prefix
-                    921,  # slip44
-                    False,  # segwit
-                    False,  # taproot
-                    64,     # fork_id
                     False,  # force_bip143
                     False,  # decred
                     False,  # negative_fee
