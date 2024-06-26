@@ -1,6 +1,7 @@
 {
   "T1B1": {
     "supported": {
+      "bitcoin:AVN": "1.7.3",
       "bitcoin:ACM": "1.7.2",
       "bitcoin:AXE": "1.7.3",
       "bitcoin:BCH": "1.6.2",
@@ -117,6 +118,7 @@
   "T2B1": {
     "supported": {
       "bitcoin:ACM": "2.6.1",
+      "bitcoin:AVN": "2.6.1",
       "bitcoin:AXE": "2.6.1",
       "bitcoin:BCH": "2.6.1",
       "bitcoin:BTC": "2.6.1",
@@ -348,6 +350,7 @@
     "supported": {
       "bitcoin:ACM": "2.6.1",
       "bitcoin:AXE": "2.6.1",
+      "bitcoin:AVN": "2.6.1",
       "bitcoin:BCH": "2.6.1",
       "bitcoin:BTC": "2.6.1",
       "bitcoin:BTCP": "2.6.1",
@@ -462,6 +465,7 @@
   "connect": {
     "supported": {
       "bitcoin:ACM": true,
+      "bitcoin:AVN": true,
       "bitcoin:AXE": true,
       "bitcoin:BCH": true,
       "bitcoin:BTC": true,
