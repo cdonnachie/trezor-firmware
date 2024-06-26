@@ -1,4 +1,10 @@
 {
+  "bitcoin:AVN": {
+    "type": "blockbook",
+    "url": [
+      "https://blockbook.avn.network"
+    ]
+  },
   "bitcoin:BCH": {
     "type": "blockbook",
     "url": [
