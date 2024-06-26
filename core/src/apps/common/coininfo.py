@@ -202,7 +202,7 @@ def by_name(name: str) -> CoinInfo:
                     921,  # slip44
                     False,  # segwit
                     False,  # taproot
-                    40,  # fork_id
+                    64,     # fork_id
                     False,  # force_bip143
                     False,  # decred
                     False,  # negative_fee
@@ -1568,7 +1568,7 @@ def by_name(name: str) -> CoinInfo:
                     921,   # slip44
                     False,  # segwit
                     False,  # taproot
-                    40,     # fork_id
+                    64,     # fork_id
                     False,  # force_bip143
                     False,  # decred
                     False,  # negative_fee
@@ -2905,7 +2905,7 @@ def by_name(name: str) -> CoinInfo:
                     921,  # slip44
                     False,  # segwit
                     False,  # taproot
-                    40,     # fork_id
+                    64,     # fork_id
                     False,  # force_bip143
                     False,  # decred
                     False,  # negative_fee
